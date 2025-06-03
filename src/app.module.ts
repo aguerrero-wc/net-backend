@@ -5,6 +5,7 @@ import { getDatabaseConfig } from './config/database.config';
 import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { TenantsModule } from './tenants/tenants.module';
+import { UserTenantRolesModule } from './user-tenant-roles/user-tenant-roles.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { TenantsModule } from './tenants/tenants.module';
     UsersModule,
     RolesModule,
     TenantsModule,
+    UserTenantRolesModule,
   ],
 })
 export class AppModule {}

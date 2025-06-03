@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany 
 } from 'typeorm';
-import { UserTenantRole } from '../../users/entities/user-tenant-role.entity';
+import { UserTenantRole } from '../../user-tenant-roles/entities/user-tenant-role.entity';
 
 @Entity('users')
 export class User {

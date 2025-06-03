@@ -1,38 +1,69 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, Query } from '@nestjs/common';
+// src/users/users.controller.ts
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { QueryUserDto } from './dto/query-user.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // @Post()
-  // create(@Body() createUserDto: CreateUserDto) {
-  //   return this.usersService.create(createUserDto);
-  // }
+  @Post()
+  async create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
 
-  // @Get()
-  // findAll(@Query('tenantId') tenantId: string) {
-  //   return this.usersService.findAll(tenantId);
-  // }
+  @Get()
+  async findAll(@Query() queryDto: QueryUserDto) {
+    return this.usersService.findAll(queryDto);
+  }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-  //   return this.usersService.findOne(id, tenantId);
-  // }
+  @Get(':id')
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.findOne(id);
+  }
 
-  // @Put(':id')
-  // update(
-  //   @Param('id') id: string,
-  //   @Query('tenantId') tenantId: string,
-  //   @Body() updateUserDto: UpdateUserDto,
-  // ) {
-  //   return this.usersService.update(id, tenantId, updateUserDto);
-  // }
+  @Patch(':id')
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateUserDto: UpdateUserDto
+  ) {
+    return this.usersService.update(id, updateUserDto);
+  }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-  //   return this.usersService.remove(id, tenantId);
-  // }
-} 
+  @Patch(':id/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updatePassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updatePasswordDto: UpdatePasswordDto
+  ) {
+    await this.usersService.updatePassword(id, updatePasswordDto);
+  }
+
+  
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.usersService.remove(id);
+  }
+
+  @Delete(':id/hard')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
+    await this.usersService.hardDelete(id);
+  }
+}

@@ -7,7 +7,7 @@ import {
   OneToMany,
   OneToOne,
 } from 'typeorm';
-import { UserTenantRole } from '../../users/entities/user-tenant-role.entity';
+import { UserTenantRole } from '../../user-tenant-roles/entities/user-tenant-role.entity';
 import { TenantConfiguration } from './tenant-configuration.entity';
 import { TenantServiceConfig } from './tenant-service-config.entity';
 
