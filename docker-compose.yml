@@ -1,7 +1,8 @@
 services:
-  postgres:
+  postgres-dev:
     image: postgres:16
-    restart: always
+    profiles: ["dev"]
+    restart: unless-stopped
     environment:
       - POSTGRES_HOST=localhost
       - POSTGRES_USER=${POSTGRES_USER_DEV}
@@ -17,7 +18,46 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - 5432:5432
+      - "${POSTGRES_PORT_DEV}:5432"
+    networks:
+      - net_project
+  
+  app-nestjs-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development 
+    command: yarn start:dev 
+    profiles: ["dev"]
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - APP_PORT=${APP_PORT}
+      - DATABASE_HOST=${POSTGRES_HOST_DEV}
+      - DATABASE_NAME=${POSTGRES_DB_DEV}
+      - DATABASE_USER=${POSTGRES_USER_DEV}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD_DEV}
+      - DATABASE_PORT=${POSTGRES_PORT_DEV}
+      - SMTP_USER=${SMTP2GO_USERNAME}
+      - SMTP_PASS=${SMTP2GO_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+        - "${HOST_PORT}:3000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+    networks:
+      - net_project
 
 volumes:
   net_data:
+
+networks:
+  net_project:
+    external: true

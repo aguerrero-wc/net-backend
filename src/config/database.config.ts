@@ -3,11 +3,11 @@ import { ConfigService } from '@nestjs/config';
 
 export const getDatabaseConfig = async (config: ConfigService): Promise<TypeOrmModuleOptions> => ({
   type: 'postgres',
-  host: config.get<string>('POSTGRES_HOST_DEV'),
-  port: config.get<number>('POSTGRES_PORT_DEV'),
-  username: config.get<string>('POSTGRES_USER_DEV'),
-  password: config.get<string>('POSTGRES_PASSWORD_DEV'),
-  database: config.get<string>('POSTGRES_DB_DEV'),
+  host: config.get<string>('DATABASE_HOST'),
+  database: config.get<string>('DATABASE_NAME'),
+  username: config.get<string>('DATABASE_USER'),
+  password: config.get<string>('DATABASE_PASSWORD'),
+  port: config.get<number>('DATABASE_PORT'),
   entities: [__dirname + '/../**/*.entity{.ts,.js}'], // Ruta dinámica para las entidades
   synchronize: config.get<string>('NODE_ENV_DEV') !== 'production',
   logging: config.get<string>('NODE_ENV_DEV') !== 'production',
