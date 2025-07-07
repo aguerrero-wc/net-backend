@@ -1,38 +1,29 @@
 import { IsOptional, IsString, IsBoolean, IsNumber, Min, Max } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
-export class QueryRoleDto {
+export class QueryRoleDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
   @IsBoolean()
+  @Transform(({ value }) => value === 'true')
   isActive?: boolean;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
   @IsBoolean()
+  @Transform(({ value }) => value === 'true')
   isSystemRole?: boolean;
 
   @IsOptional()
-  @Transform(({ value }) => parseInt(value))
   @IsNumber()
-  @Min(0)
-  @Max(100)
+  @Transform(({ value }) => parseInt(value))
   minLevel?: number;
 
   @IsOptional()
-  @Transform(({ value }) => parseInt(value))
-  @IsNumber()
-  @Min(1)
-  page?: number = 1;
-
-  @IsOptional()
-  @Transform(({ value }) => parseInt(value))
-  @IsNumber()
-  @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true')
+  includePermissions?: boolean; // Nuevo campo
 }

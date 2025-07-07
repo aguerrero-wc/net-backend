@@ -5,8 +5,9 @@ import {
   BadRequestException 
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Role } from './entities/role.entity';
+import { Permission } from '../permissions/entities/permission.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryRoleDto } from './dto/query-role.dto';
@@ -16,6 +17,8 @@ export class RolesService {
   constructor(
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    @InjectRepository(Permission)
+    private readonly permissionRepository: Repository<Permission>,
   ) {}
 
   /**
@@ -39,8 +42,23 @@ export class RolesService {
       }
     }
 
+    // Procesar permisos si se proporcionan
+    let permissions: Permission[] = [];
+    if (createRoleDto.permissionKeys && createRoleDto.permissionKeys.length > 0) {
+      permissions = await this.permissionRepository.find({
+        where: { key: In(createRoleDto.permissionKeys) }
+      });
+
+      if (permissions.length !== createRoleDto.permissionKeys.length) {
+        throw new BadRequestException('Algunos permisos especificados no existen');
+      }
+    }
+
     // Crear el rol
-    const role = this.roleRepository.create(createRoleDto);
+    const role = this.roleRepository.create({
+      ...createRoleDto,
+      permissions
+    });
 
     try {
       return await this.roleRepository.save(role);
@@ -61,11 +79,17 @@ export class RolesService {
       isActive, 
       isSystemRole, 
       minLevel,
+      includePermissions = false,
       page = 1, 
       limit = 10 
     } = queryDto;
 
     const queryBuilder = this.roleRepository.createQueryBuilder('role');
+
+    // Incluir permisos si se solicita
+    if (includePermissions) {
+      queryBuilder.leftJoinAndSelect('role.permissions', 'permission');
+    }
 
     // Filtros
     if (search) {
@@ -108,10 +132,14 @@ export class RolesService {
   /**
    * Obtener un rol por ID
    */
-  async findOne(id: string): Promise<Role> {
-    const role = await this.roleRepository.findOne({
-      where: { id }
-    });
+  async findOne(id: string, includePermissions: boolean = true): Promise<Role> {
+    const options: any = { where: { id } };
+    
+    if (includePermissions) {
+      options.relations = ['permissions'];
+    }
+
+    const role = await this.roleRepository.findOne(options);
 
     if (!role) {
       throw new NotFoundException(`Rol con ID ${id} no encontrado`);
@@ -123,17 +151,21 @@ export class RolesService {
   /**
    * Obtener un rol por slug
    */
-  async findBySlug(slug: string): Promise<Role | null> {
-    return this.roleRepository.findOne({
-      where: { slug }
-    });
+  async findBySlug(slug: string, includePermissions: boolean = false): Promise<Role | null> {
+    const options: any = { where: { slug } };
+    
+    if (includePermissions) {
+      options.relations = ['permissions'];
+    }
+
+    return this.roleRepository.findOne(options);
   }
 
   /**
    * Actualizar un rol
    */
   async update(id: string, updateRoleDto: UpdateRoleDto): Promise<Role> {
-    const role = await this.findOne(id);
+    const role = await this.findOne(id, true);
 
     // Verificar si es un rol del sistema y se está intentando cambiar propiedades críticas
     if (role.isSystemRole) {
@@ -166,8 +198,24 @@ export class RolesService {
       }
     }
 
-    // Actualizar los campos
-    Object.assign(role, updateRoleDto);
+    // Procesar permisos si se proporcionan
+    if (updateRoleDto.permissionKeys) {
+      const permissions = await this.permissionRepository.find({
+        where: { key: In(updateRoleDto.permissionKeys) }
+      });
+
+      if (permissions.length !== updateRoleDto.permissionKeys.length) {
+        throw new BadRequestException('Algunos permisos especificados no existen');
+      }
+
+      role.permissions = permissions;
+    }
+
+    // Actualizar los demás campos
+    Object.assign(role, {
+      ...updateRoleDto,
+      permissionKeys: undefined // No guardar este campo en la entidad
+    });
 
     try {
       return await this.roleRepository.save(role);
@@ -183,7 +231,7 @@ export class RolesService {
    * Activar/desactivar rol
    */
   async toggleActive(id: string): Promise<Role> {
-    const role = await this.findOne(id);
+    const role = await this.findOne(id, false);
 
     // No permitir desactivar roles del sistema críticos
     if (role.isSystemRole && role.isActive && (role.slug === 'super-admin' || role.level >= 100)) {
@@ -198,175 +246,132 @@ export class RolesService {
     return updatedRole;
   }
 
+  
   /**
-   * Agregar permisos a un rol
+   * Agregar permisos a un rol (sin duplicados)
    */
-  async addPermissions(id: string, permissions: string[]): Promise<Role> {
-    const role = await this.findOne(id);
+  async addPermissions(id: string, permissionKeys: string[]): Promise<Role> {
+    // 1. Obtener el rol con sus permisos actuales
+    const role = await this.findOne(id, true);
 
-    // Combinar permisos existentes con nuevos (sin duplicados)
-    const uniquePermissions = [...new Set([...role.permissions, ...permissions])];
-
-    const updatedRole = await this.roleRepository.save({
-      ...role,
-      permissions: uniquePermissions
+    // 2. Obtener las entidades Permission por sus keys
+    const newPermissions = await this.permissionRepository.find({
+      where: { key: In(permissionKeys) }
     });
 
-    return updatedRole;
+    // 3. Verificar que todos los permisos existen
+    if (newPermissions.length !== permissionKeys.length) {
+      const foundKeys = newPermissions.map(p => p.key);
+      const missingKeys = permissionKeys.filter(key => !foundKeys.includes(key));
+      throw new BadRequestException(`Los siguientes permisos no existen: ${missingKeys.join(', ')}`);
+    }
+
+    // 4. Filtrar permisos que NO estén ya asignados
+    const existingPermissionKeys = role.permissions.map(p => p.key);
+    const permissionsToAdd = newPermissions.filter(
+      permission => !existingPermissionKeys.includes(permission.key)
+    );
+
+    if (permissionsToAdd.length === 0) {
+      throw new BadRequestException('Todos los permisos ya están asignados a este rol');
+    }
+
+    // 5. Agregar los nuevos permisos
+    role.permissions = [...role.permissions, ...permissionsToAdd];
+
+    // 6. Guardar y retornar
+    return await this.roleRepository.save(role);
   }
 
   /**
    * Remover permisos de un rol
    */
-  async removePermissions(id: string, permissions: string[]): Promise<Role> {
-    const role = await this.findOne(id);
+  async removePermissions(id: string, permissionKeys: string[]): Promise<Role> {
+    // 1. Obtener el rol con sus permisos actuales
+    const role = await this.findOne(id, true);
 
-    // Filtrar permisos
-    const filteredPermissions = role.permissions.filter(
-      permission => !permissions.includes(permission)
+    // 2. Verificar que el rol tiene permisos para remover
+    if (role.permissions.length === 0) {
+      throw new BadRequestException('El rol no tiene permisos asignados');
+    }
+
+    // 3. Filtrar permisos (mantener los que NO están en permissionKeys)
+    const originalCount = role.permissions.length;
+    role.permissions = role.permissions.filter(
+      permission => !permissionKeys.includes(permission.key)
     );
 
-    const updatedRole = await this.roleRepository.save({
-      ...role,
-      permissions: filteredPermissions
+    // 4. Verificar que se removió al menos un permiso
+    if (role.permissions.length === originalCount) {
+      throw new BadRequestException('Ninguno de los permisos especificados estaba asignado al rol');
+    }
+
+    // 5. Guardar y retornar
+    return await this.roleRepository.save(role);
+  }
+
+  /**
+   * Actualizar todos los permisos de un rol (reemplazar completamente)
+   */
+  async updatePermissions(id: string, permissionKeys: string[]): Promise<Role> {
+    // 1. Obtener el rol
+    const role = await this.findOne(id, true);
+
+    // 2. Si no se proporcionan permisos, limpiar todos
+    if (permissionKeys.length === 0) {
+      role.permissions = [];
+      return await this.roleRepository.save(role);
+    }
+
+    // 3. Obtener todas las entidades Permission por sus keys
+    const permissions = await this.permissionRepository.find({
+      where: { key: In(permissionKeys) }
     });
 
-    return updatedRole;
+    // 4. Verificar que todos los permisos existen
+    if (permissions.length !== permissionKeys.length) {
+      const foundKeys = permissions.map(p => p.key);
+      const missingKeys = permissionKeys.filter(key => !foundKeys.includes(key));
+      throw new BadRequestException(`Los siguientes permisos no existen: ${missingKeys.join(', ')}`);
+    }
+
+    // 5. Reemplazar todos los permisos
+    role.permissions = permissions;
+
+    // 6. Guardar y retornar
+    return await this.roleRepository.save(role);
   }
 
   /**
    * Verificar si un rol tiene un permiso específico
    */
-  async hasPermission(id: string, permission: string): Promise<boolean> {
-    const role = await this.findOne(id);
-    return role.permissions.includes(permission);
+  async hasPermission(id: string, permissionKey: string): Promise<boolean> {
+    const role = await this.findOne(id, true);
+    return role.permissions.some(permission => permission.key === permissionKey);
   }
 
   /**
-   * Obtener roles por nivel mínimo
+   * Obtener solo los permisos de un rol
    */
-  async findByMinLevel(minLevel: number): Promise<Role[]> {
-    return this.roleRepository.find({
-      where: {
-        level: minLevel,
-        isActive: true
-      },
-      order: {
-        level: 'DESC',
-        name: 'ASC'
-      }
-    });
+  async getPermissions(id: string): Promise<Permission[]> {
+    const role = await this.findOne(id, true);
+    return role.permissions;
   }
 
   /**
-   * Eliminar rol (solo si no es del sistema)
+   * Verificar si un rol tiene múltiples permisos
    */
-  async remove(id: string): Promise<void> {
-    const role = await this.findOne(id);
-
-    if (role.isSystemRole) {
-      throw new BadRequestException('No se puede eliminar un rol del sistema');
-    }
-
-    // TODO: Verificar que no haya usuarios asignados a este rol
-    // const usersWithRole = await this.userTenantRoleRepository.count({ where: { roleId: id } });
-    // if (usersWithRole > 0) {
-    //   throw new BadRequestException('No se puede eliminar un rol que tiene usuarios asignados');
-    // }
-
-    await this.roleRepository.remove(role);
+  async hasPermissions(id: string, permissionKeys: string[]): Promise<{ [key: string]: boolean }> {
+    const role = await this.findOne(id, true);
+    const rolePermissionKeys = role.permissions.map(p => p.key);
+    
+    const result: { [key: string]: boolean } = {};
+    permissionKeys.forEach(key => {
+      result[key] = rolePermissionKeys.includes(key);
+    });
+    
+    return result;
   }
 
-  /**
-   * Obtener estadísticas de roles
-   */
-  async getStats() {
-    const total = await this.roleRepository.count();
-    const active = await this.roleRepository.count({ where: { isActive: true } });
-    const systemRoles = await this.roleRepository.count({ where: { isSystemRole: true } });
-    const customRoles = await this.roleRepository.count({ where: { isSystemRole: false } });
 
-    // Estadísticas por nivel
-    const adminRoles = await this.roleRepository.count({ 
-      where: { level: 90, isActive: true } 
-    });
-    const editorRoles = await this.roleRepository.count({ 
-      where: { level: 50, isActive: true } 
-    });
-    const viewerRoles = await this.roleRepository.count({ 
-      where: { level: 10, isActive: true } 
-    });
-
-    return {
-      total,
-      active,
-      inactive: total - active,
-      systemRoles,
-      customRoles,
-      byLevel: {
-        admin: adminRoles,
-        editor: editorRoles,
-        viewer: viewerRoles
-      }
-    };
-  }
-
-  /**
-   * Crear roles del sistema por defecto
-   */
-  async createDefaultRoles(): Promise<void> {
-    const defaultRoles = [
-      {
-        name: 'Super Administrador',
-        slug: 'super-admin',
-        description: 'Acceso completo al sistema',
-        color: '#EF4444',
-        icon: 'crown',
-        permissions: ['system.admin', 'users.*', 'roles.*', 'tenants.*'],
-        level: 100,
-        isActive: true,
-        isSystemRole: true
-      },
-      {
-        name: 'Administrador de Tenant',
-        slug: 'tenant-admin',
-        description: 'Administra completamente un tenant específico',
-        color: '#F59E0B',
-        icon: 'shield-check',
-        permissions: ['tenant.admin', 'users.*', 'content.*'],
-        level: 90,
-        isActive: true,
-        isSystemRole: true
-      },
-      {
-        name: 'Editor',
-        slug: 'editor',
-        description: 'Puede crear y editar contenido',
-        color: '#3B82F6',
-        icon: 'edit',
-        permissions: ['content.create', 'content.read', 'content.update', 'users.read'],
-        level: 50,
-        isActive: true,
-        isSystemRole: true
-      },
-      {
-        name: 'Visualizador',
-        slug: 'viewer',
-        description: 'Solo puede ver contenido',
-        color: '#10B981',
-        icon: 'eye',
-        permissions: ['content.read'],
-        level: 10,
-        isActive: true,
-        isSystemRole: true
-      }
-    ];
-
-    for (const roleData of defaultRoles) {
-      const existingRole = await this.findBySlug(roleData.slug);
-      if (!existingRole) {
-        await this.create(roleData as CreateRoleDto);
-      }
-    }
-  }
 }

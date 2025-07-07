@@ -1,19 +1,17 @@
-import { IsString, IsOptional, IsArray, IsNumber, IsBoolean, MinLength, MaxLength, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber, IsBoolean, MinLength, MaxLength, Min, Max, IsNotEmpty } from 'class-validator';
+
 
 export class CreateRoleDto {
   @IsString()
-  @MinLength(2)
-  @MaxLength(50)
+  @IsNotEmpty()
   name: string;
 
   @IsString()
-  @MinLength(2)
-  @MaxLength(50)
+  @IsNotEmpty()
   slug: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
   description?: string;
 
   @IsOptional()
@@ -25,14 +23,7 @@ export class CreateRoleDto {
   icon?: string;
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  permissions?: string[];
-
-  @IsOptional()
   @IsNumber()
-  @Min(0)
-  @Max(100)
   level?: number;
 
   @IsOptional()
@@ -42,4 +33,9 @@ export class CreateRoleDto {
   @IsOptional()
   @IsBoolean()
   isSystemRole?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  permissionKeys?: string[]; // Nuevo campo para los keys de permisos
 }

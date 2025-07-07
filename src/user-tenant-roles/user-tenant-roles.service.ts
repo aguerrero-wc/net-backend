@@ -162,38 +162,38 @@ export class UserTenantRolesService {
   /**
    * Obtener permisos efectivos de un usuario en un tenant
    */
-  async getUserEffectivePermissions(userId: string, tenantId: string): Promise<string[]> {
-    const assignment = await this.getUserRoleInTenant(userId, tenantId);
+  // async getUserEffectivePermissions(userId: string, tenantId: string): Promise<string[]> {
+  //   const assignment = await this.getUserRoleInTenant(userId, tenantId);
     
-    if (!assignment || !assignment.isCurrentlyActive) {
-      return [];
-    }
+  //   if (!assignment || !assignment.isCurrentlyActive) {
+  //     return [];
+  //   }
 
-    let permissions = [...assignment.role.permissions];
+  //   let permissions = [...assignment.role.permissions];
 
-    // Agregar permisos adicionales
-    if (assignment.additionalPermissions) {
-      permissions = [...permissions, ...assignment.additionalPermissions];
-    }
+  //   // Agregar permisos adicionales
+  //   if (assignment.additionalPermissions) {
+  //     permissions = [...permissions, ...assignment.additionalPermissions];
+  //   }
 
-    // Remover permisos denegados
-    if (assignment.deniedPermissions) {
-      permissions = permissions.filter(
-        permission => !assignment.deniedPermissions.includes(permission)
-      );
-    }
+  //   // Remover permisos denegados
+  //   if (assignment.deniedPermissions) {
+  //     permissions = permissions.filter(
+  //       permission => !assignment.deniedPermissions.includes(permission)
+  //     );
+  //   }
 
-    // Remover duplicados
-    return [...new Set(permissions)];
-  }
+  //   // Remover duplicados
+  //   return [...new Set(permissions)];
+  // }
 
   /**
    * Verificar si usuario tiene permiso específico en tenant
    */
-  async userHasPermission(userId: string, tenantId: string, permission: string): Promise<boolean> {
-    const permissions = await this.getUserEffectivePermissions(userId, tenantId);
-    return permissions.includes(permission) || permissions.includes('*') || permissions.includes('system.admin');
-  }
+  // async userHasPermission(userId: string, tenantId: string, permission: string): Promise<boolean> {
+  //   const permissions = await this.getUserEffectivePermissions(userId, tenantId);
+  //   return permissions.includes(permission) || permissions.includes('*') || permissions.includes('system.admin');
+  // }
 
   /**
    * Actualizar asignación de rol

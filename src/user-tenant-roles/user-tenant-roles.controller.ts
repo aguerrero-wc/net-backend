@@ -53,24 +53,24 @@ export class UserTenantRolesController {
     return this.userTenantRolesService.getUserRoleInTenant(userId, tenantId);
   }
 
-  @Get('user/:userId/tenant/:tenantId/permissions')
-  async getUserPermissions(
-    @Param('userId', ParseUUIDPipe) userId: string,
-    @Param('tenantId', ParseUUIDPipe) tenantId: string
-  ) {
-    const permissions = await this.userTenantRolesService.getUserEffectivePermissions(userId, tenantId);
-    return { permissions };
-  }
+  // @Get('user/:userId/tenant/:tenantId/permissions')
+  // async getUserPermissions(
+  //   @Param('userId', ParseUUIDPipe) userId: string,
+  //   @Param('tenantId', ParseUUIDPipe) tenantId: string
+  // ) {
+  //   const permissions = await this.userTenantRolesService.getUserEffectivePermissions(userId, tenantId);
+  //   return { permissions };
+  // }
 
-  @Get('user/:userId/tenant/:tenantId/has-permission/:permission')
-  async checkPermission(
-    @Param('userId', ParseUUIDPipe) userId: string,
-    @Param('tenantId', ParseUUIDPipe) tenantId: string,
-    @Param('permission') permission: string
-  ) {
-    const hasPermission = await this.userTenantRolesService.userHasPermission(userId, tenantId, permission);
-    return { hasPermission };
-  }
+  // @Get('user/:userId/tenant/:tenantId/has-permission/:permission')
+  // async checkPermission(
+  //   @Param('userId', ParseUUIDPipe) userId: string,
+  //   @Param('tenantId', ParseUUIDPipe) tenantId: string,
+  //   @Param('permission') permission: string
+  // ) {
+  //   const hasPermission = await this.userTenantRolesService.userHasPermission(userId, tenantId, permission);
+  //   return { hasPermission };
+  // }
 
   @Patch(':id')
   async update(

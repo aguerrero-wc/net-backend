@@ -10,13 +10,15 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  ParseUUIDPipe
+  ParseUUIDPipe,
+  Put
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryRoleDto } from './dto/query-role.dto';
 import { ManagePermissionsDto } from './dto/manage-permissions.dto';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('roles')
 export class RolesController {
@@ -27,26 +29,9 @@ export class RolesController {
     return this.rolesService.create(createRoleDto);
   }
 
-  @Post('setup-defaults')
-  @HttpCode(HttpStatus.OK)
-  async setupDefaultRoles() {
-    await this.rolesService.createDefaultRoles();
-    return { message: 'Roles por defecto creados exitosamente' };
-  }
-
   @Get()
   async findAll(@Query() queryDto: QueryRoleDto) {
     return this.rolesService.findAll(queryDto);
-  }
-
-  @Get('stats')
-  async getStats() {
-    return this.rolesService.getStats();
-  }
-
-  @Get('by-level/:minLevel')
-  async findByMinLevel(@Param('minLevel') minLevel: string) {
-    return this.rolesService.findByMinLevel(parseInt(minLevel));
   }
 
   @Get('slug/:slug')
@@ -63,15 +48,6 @@ export class RolesController {
     return this.rolesService.findOne(id);
   }
 
-  @Get(':id/has-permission/:permission')
-  async hasPermission(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('permission') permission: string
-  ) {
-    const hasPermission = await this.rolesService.hasPermission(id, permission);
-    return { hasPermission };
-  }
-
   @Patch(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -85,25 +61,94 @@ export class RolesController {
     return this.rolesService.toggleActive(id);
   }
 
-  @Patch(':id/permissions/add')
+  @Post(':id/permissions')
+  @ApiOperation({ summary: 'Agregar permisos a un rol' })
+  @ApiResponse({ status: 200, description: 'Permisos agregados exitosamente' })
+  @ApiResponse({ status: 400, description: 'Algunos permisos no existen o ya están asignados' })
+  @ApiResponse({ status: 404, description: 'Rol no encontrado' })
   async addPermissions(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() managePermissionsDto: ManagePermissionsDto
+    @Body() dto: ManagePermissionsDto
   ) {
-    return this.rolesService.addPermissions(id, managePermissionsDto.permissions);
+    return this.rolesService.addPermissions(id, dto.permissionKeys);
   }
 
-  @Patch(':id/permissions/remove')
+  /**
+   * Remover permisos de un rol
+   */
+  @Delete(':id/permissions')
+  @ApiOperation({ summary: 'Remover permisos de un rol' })
+  @ApiResponse({ status: 200, description: 'Permisos removidos exitosamente' })
+  @ApiResponse({ status: 400, description: 'Permisos no encontrados en el rol' })
+  @ApiResponse({ status: 404, description: 'Rol no encontrado' })
   async removePermissions(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() managePermissionsDto: ManagePermissionsDto
+    @Body() dto: ManagePermissionsDto
   ) {
-    return this.rolesService.removePermissions(id, managePermissionsDto.permissions);
+    return this.rolesService.removePermissions(id, dto.permissionKeys);
   }
 
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
-    await this.rolesService.remove(id);
+  /**
+   * Actualizar todos los permisos de un rol (reemplazar)
+   */
+  @Put(':id/permissions')
+  @ApiOperation({ summary: 'Actualizar todos los permisos de un rol' })
+  @ApiResponse({ status: 200, description: 'Permisos actualizados exitosamente' })
+  @ApiResponse({ status: 400, description: 'Algunos permisos no existen' })
+  @ApiResponse({ status: 404, description: 'Rol no encontrado' })
+  async updatePermissions(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ManagePermissionsDto
+  ) {
+    return this.rolesService.updatePermissions(id, dto.permissionKeys);
   }
+
+  /**
+   * Obtener permisos de un rol
+   */
+  @Get(':id/permissions')
+  @ApiOperation({ summary: 'Obtener todos los permisos de un rol' })
+  @ApiResponse({ status: 200, description: 'Permisos obtenidos exitosamente' })
+  @ApiResponse({ status: 404, description: 'Rol no encontrado' })
+  async getPermissions(@Param('id', ParseUUIDPipe) id: string) {
+    return this.rolesService.getPermissions(id);
+  }
+
+  /**
+   * Verificar si un rol tiene un permiso específico
+   */
+  @Get(':id/permissions/:permissionKey/check')
+  @ApiOperation({ summary: 'Verificar si un rol tiene un permiso específico' })
+  @ApiResponse({ status: 200, description: 'Verificación completada' })
+  @ApiResponse({ status: 404, description: 'Rol no encontrado' })
+  async checkPermission(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('permissionKey') permissionKey: string
+  ) {
+    const hasPermission = await this.rolesService.hasPermission(id, permissionKey);
+    return {
+      roleId: id,
+      permissionKey,
+      hasPermission
+    };
+  }
+
+  /**
+   * Verificar múltiples permisos de un rol
+   */
+  @Post(':id/permissions/check')
+  @ApiOperation({ summary: 'Verificar múltiples permisos de un rol' })
+  @ApiResponse({ status: 200, description: 'Verificación completada' })
+  @ApiResponse({ status: 404, description: 'Rol no encontrado' })
+  async checkPermissions(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ManagePermissionsDto
+  ) {
+    const permissionStatus = await this.rolesService.hasPermissions(id, dto.permissionKeys);
+    return {
+      roleId: id,
+      permissions: permissionStatus
+    };
+  }
+  
 }

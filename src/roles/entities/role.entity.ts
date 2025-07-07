@@ -1,5 +1,5 @@
-// src/entities/role.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Permission } from 'src/permissions/entities/permission.entity';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
 
 @Entity('roles')
 export class Role {
@@ -21,13 +21,9 @@ export class Role {
   @Column({ nullable: true })
   icon: string; // Icono para UI
 
-  // Permisos granulares
-  @Column({ type: 'jsonb', default: [] })
-  permissions: string[]; // ['users.create', 'users.read', 'users.update', 'users.delete']
-
   // Nivel de acceso (para jerarquía)
   @Column({ default: 0 })
-  level: number; // 0=viewer, 50=editor, 90=admin, 100=super-admin
+  level: number;
 
   // Meta información
   @Column({ default: true })
@@ -41,4 +37,21 @@ export class Role {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @ManyToMany(() => Permission, {
+    cascade: true,
+    eager: true,
+  })
+  @JoinTable({
+    name: 'role_permissions',
+    joinColumn: {
+      name: 'role_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'permission_id',
+      referencedColumnName: 'id',
+    },
+  })
+  permissions: Permission[];
 }
