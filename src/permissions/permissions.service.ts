@@ -92,8 +92,11 @@ export class PermissionsService {
       group, 
       key,
       page = 1, 
-      limit = 10 
+      limit = 10,
+      getAllPermissions = false,
     } = queryDto;
+    console.log('ssssssss',getAllPermissions);
+    
 
     const queryBuilder = this.permissionRepository.createQueryBuilder('permission');
 
@@ -113,9 +116,14 @@ export class PermissionsService {
       queryBuilder.andWhere('permission.key ILIKE :key', { key: `%${key}%` });
     }
 
-    // Paginación
-    const offset = (page - 1) * limit;
-    queryBuilder.skip(offset).take(limit);
+    if (!getAllPermissions){
+      const offset = (page - 1) * limit;
+      queryBuilder.skip(offset).take(limit);
+    }
+
+    // // Paginación
+    // const offset = (page - 1) * limit;
+    // queryBuilder.skip(offset).take(limit);
 
     // Ordenamiento por grupo y luego por key
     queryBuilder.orderBy('permission.group', 'ASC').addOrderBy('permission.key', 'ASC');
@@ -125,9 +133,9 @@ export class PermissionsService {
     return {
       data: permissions,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit)
+      page: getAllPermissions ? 1 : page,
+      limit: getAllPermissions ? total : limit,
+      totalPages: getAllPermissions ? 1 : Math.ceil(total / limit)
     };
   }
 

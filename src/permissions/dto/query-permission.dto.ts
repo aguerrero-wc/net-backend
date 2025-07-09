@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsPositive, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsPositive, Min, Max, IsBoolean } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class QueryPermissionDto {
@@ -27,4 +27,9 @@ export class QueryPermissionDto {
   @Min(1)
   @Max(100)
   limit?: number = 10;
+  
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  getAllPermissions?: boolean = false;
 }
