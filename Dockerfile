@@ -10,7 +10,7 @@ WORKDIR /usr/src/app
 
 # Stage 2: Dependencias - Instala TODAS las dependencias necesarias
 FROM base AS deps
-COPY package.json yarn.lock ./
+COPY package.json ./
 # --frozen-lockfile asegura que se usa yarn.lock
 # --prefer-offline puede acelerar builds si las dependencias están cacheadas localmente por Yarn
 RUN yarn install --frozen-lockfile --prefer-offline

@@ -27,43 +27,43 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @Get()
-  async findAll(@Query() queryDto: QueryUserDto) {
-    return this.usersService.findAll(queryDto);
-  }
+  // @Get()
+  // async findAll(@Query() queryDto: QueryUserDto) {
+  //   return this.usersService.findAll(queryDto);
+  // }
 
-  @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usersService.findOne(id);
-  }
+  // @Get(':id')
+  // async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  //   return this.usersService.findOne(id);
+  // }
 
-  @Patch(':id')
-  async update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateUserDto: UpdateUserDto
-  ) {
-    return this.usersService.update(id, updateUserDto);
-  }
+  // @Patch(':id')
+  // async update(
+  //   @Param('id', ParseUUIDPipe) id: string,
+  //   @Body() updateUserDto: UpdateUserDto
+  // ) {
+  //   return this.usersService.update(id, updateUserDto);
+  // }
 
-  @Patch(':id/password')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async updatePassword(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updatePasswordDto: UpdatePasswordDto
-  ) {
-    await this.usersService.updatePassword(id, updatePasswordDto);
-  }
+  // @Patch(':id/password')
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  // async updatePassword(
+  //   @Param('id', ParseUUIDPipe) id: string,
+  //   @Body() updatePasswordDto: UpdatePasswordDto
+  // ) {
+  //   await this.usersService.updatePassword(id, updatePasswordDto);
+  // }
 
   
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
-    await this.usersService.remove(id);
-  }
+  // @Delete(':id')
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  // async remove(@Param('id', ParseUUIDPipe) id: string) {
+  //   await this.usersService.remove(id);
+  // }
 
-  @Delete(':id/hard')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
-    await this.usersService.hardDelete(id);
-  }
+  // @Delete(':id/hard')
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  // async hardDelete(@Param('id', ParseUUIDPipe) id: string) {
+  //   await this.usersService.hardDelete(id);
+  // }
 }

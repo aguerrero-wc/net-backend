@@ -37,5 +37,5 @@ export class CreateRoleDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  permissionKeys?: string[]; // Nuevo campo para los keys de permisos
+  permissionKeys?: string[];
 }

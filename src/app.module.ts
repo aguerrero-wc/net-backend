@@ -7,6 +7,7 @@ import { RolesModule } from './roles/roles.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { UserTenantRolesModule } from './user-tenant-roles/user-tenant-roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { PermissionsModule } from './permissions/permissions.module';
     TenantsModule,
     UserTenantRolesModule,
     PermissionsModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

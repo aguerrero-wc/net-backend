@@ -24,51 +24,81 @@ export class RolesService {
   /**
    * Crear un nuevo rol
    */
-  async create(createRoleDto: CreateRoleDto): Promise<Role> {
-    // Verificar si el name o slug ya existen
-    const existingRole = await this.roleRepository.findOne({
-      where: [
-        { name: createRoleDto.name },
-        { slug: createRoleDto.slug }
-      ]
-    });
+// roles.service.ts
+async create(createRoleDto: CreateRoleDto): Promise<Role> {
+  console.log('DTO recibido:', createRoleDto);
+  
+  // Verificar si el name o slug ya existen
+  const existingRole = await this.roleRepository.findOne({
+    where: [
+      { name: createRoleDto.name },
+      { slug: createRoleDto.slug }
+    ]
+  });
 
-    if (existingRole) {
-      if (existingRole.name === createRoleDto.name) {
-        throw new ConflictException('El nombre del rol ya existe');
-      }
-      if (existingRole.slug === createRoleDto.slug) {
-        throw new ConflictException('El slug del rol ya existe');
-      }
+  if (existingRole) {
+    if (existingRole.name === createRoleDto.name) {
+      throw new ConflictException('El nombre del rol ya existe');
     }
-
-    // Procesar permisos si se proporcionan
-    let permissions: Permission[] = [];
-    if (createRoleDto.permissionKeys && createRoleDto.permissionKeys.length > 0) {
-      permissions = await this.permissionRepository.find({
-        where: { key: In(createRoleDto.permissionKeys) }
-      });
-
-      if (permissions.length !== createRoleDto.permissionKeys.length) {
-        throw new BadRequestException('Algunos permisos especificados no existen');
-      }
-    }
-
-    // Crear el rol
-    const role = this.roleRepository.create({
-      ...createRoleDto,
-      permissions
-    });
-
-    try {
-      return await this.roleRepository.save(role);
-    } catch (error) {
-      if (error.code === '23505') { // PostgreSQL unique violation
-        throw new ConflictException('El nombre o slug del rol ya existe');
-      }
-      throw error;
+    if (existingRole.slug === createRoleDto.slug) {
+      throw new ConflictException('El slug del rol ya existe');
     }
   }
+
+  // ✅ CORREGIDO: Procesar permisos por ID 
+  let permissions: Permission[] = [];
+  
+  if (createRoleDto.permissionKeys && createRoleDto.permissionKeys.length > 0) {
+    console.log('Buscando permisos por IDs:', createRoleDto.permissionKeys);
+    
+    permissions = await this.permissionRepository.find({
+      where: { id: In(createRoleDto.permissionKeys) }
+    });
+
+    console.log('Permisos encontrados:', permissions.length);
+
+    if (permissions.length !== createRoleDto.permissionKeys.length) {
+      throw new BadRequestException(
+        `Algunos permisos no existen. Esperados: ${createRoleDto.permissionKeys.length}, Encontrados: ${permissions.length}`
+      );
+    }
+  }
+
+  // Crear el rol
+  const newRole = this.roleRepository.create({
+    name: createRoleDto.name,
+    slug: createRoleDto.slug,
+    description: createRoleDto.description,
+    color: createRoleDto.color,
+    icon: createRoleDto.icon,
+    level: createRoleDto.level ?? 10,
+    isActive: createRoleDto.isActive ?? true,
+    isSystemRole: createRoleDto.isSystemRole ?? false,
+    permissions: permissions // ✅ Asignar permisos
+  });
+
+  // Guardar en la base de datos
+  const savedRole = await this.roleRepository.save(newRole);
+  console.log('Rol guardado con ID:', savedRole.id);
+
+  // ✅ IMPORTANTE: Retornar el rol completo con las relaciones
+  const roleWithPermissions = await this.roleRepository.findOne({
+    where: { id: savedRole.id },
+    relations: ['permissions'] // ✅ Incluir permisos en la respuesta
+  });
+
+  if (!roleWithPermissions) {
+    throw new Error('Error al recuperar el rol creado');
+  }
+
+  console.log('Rol creado exitosamente:', {
+    id: roleWithPermissions.id,
+    name: roleWithPermissions.name,
+    permissionsCount: roleWithPermissions.permissions?.length || 0
+  });
+
+  return roleWithPermissions;
+}
 
   /**
    * Obtener todos los roles con filtros y paginación

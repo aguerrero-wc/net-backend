@@ -121,10 +121,6 @@ export class PermissionsService {
       queryBuilder.skip(offset).take(limit);
     }
 
-    // // Paginación
-    // const offset = (page - 1) * limit;
-    // queryBuilder.skip(offset).take(limit);
-
     // Ordenamiento por grupo y luego por key
     queryBuilder.orderBy('permission.group', 'ASC').addOrderBy('permission.key', 'ASC');
 
