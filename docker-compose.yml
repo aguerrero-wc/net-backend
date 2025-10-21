@@ -155,4 +155,4 @@ volumes:
 
 networks:
   channel:
-    driver: bridge
+    external: true
