@@ -2,9 +2,7 @@
 # Stage 1: Base - Imagen base con Node.js
 # ============================================
 FROM node:lts-jod AS base
-
 WORKDIR /usr/src/app
-
 # Instalar dependencias del sistema necesarias para módulos nativos
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
@@ -25,15 +23,13 @@ RUN yarn install --frozen-lockfile --prefer-offline
 # Stage 3: Builder - Construye la aplicación
 # ============================================
 FROM deps AS builder
-# Copiar código fuente
 COPY . .
-# Construir la aplicación
 RUN yarn build
 
 # ============================================
 # Stage 4: Production - Imagen optimizada
 # ============================================
-FROM node:22-bookworm-slim AS production
+FROM node:lts-jod AS production
 ENV NODE_ENV=production
 WORKDIR /usr/src/app
 # Copiar archivos de dependencias
@@ -44,7 +40,6 @@ COPY --chown=node:node --from=builder /usr/src/app/dist ./dist
 COPY --chown=node:node --from=deps /usr/src/app/node_modules ./node_modules
 # Cambiar a usuario no-root
 USER node
-# Exponer puerto
 EXPOSE 3000
 
 # Healthcheck
@@ -52,17 +47,12 @@ EXPOSE 3000
 #   CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Comando para iniciar la aplicación
-#MD ["node", "dist/main.js"]
+CMD ["node", "dist/main.js"]
 
 # ============================================
 # Stage 5: Development - Entorno de desarrollo
 # ============================================
 FROM deps AS development
 ENV NODE_ENV=development
-# Copiar todo el código fuente
 COPY . .
-# Exponer puerto
 EXPOSE 3000
-
-# El comando se define en docker-compose
-CMD ["yarn", "start:dev"]

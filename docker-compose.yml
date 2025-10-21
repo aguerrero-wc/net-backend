@@ -37,11 +37,6 @@ services:
       DATABASE_USER: ${POSTGRES_USER_DEV}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD_DEV}
       DATABASE_PORT: 5432
-      SMTP_USER: ${SMTP2GO_USERNAME}
-      SMTP_PASS: ${SMTP2GO_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      JWT_EXPIRATION: ${JWT_EXPIRATION}
     volumes:
       - ./:/usr/src/app
       - /usr/src/app/node_modules
@@ -63,20 +58,22 @@ services:
   # ============================================
   db-prod:
     image: postgres:16
-    profiles: ["prod"]
+    profiles: ["prod", "db"]
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER_PROD}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_PROD}
-      POSTGRES_DB: ${POSTGRES_DB_PROD}
+      DATABASE_NAME: ${POSTGRES_DB}
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - db_channel_prod_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER_PROD} -d ${POSTGRES_DB_PROD}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     networks:
       - channel
     logging:
@@ -90,26 +87,21 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
-    profiles: ["prod"]
+    profiles: ["prod", "mi"]
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      APP_PORT: 3005
-      DATABASE_HOST: db-prod
-      DATABASE_NAME: ${POSTGRES_DB_PROD}
-      DATABASE_USER: ${POSTGRES_USER_PROD}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD_PROD}
-      DATABASE_PORT: 5432
-      SMTP_USER: ${SMTP2GO_USERNAME}
-      SMTP_PASS: ${SMTP2GO_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      APP_PORT: ${APP_PORT:-3005}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_NAME: ${POSTGRES_DB}
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_PORT: ${POSTGRES_PORT}
     expose:
       - "3000"
-    depends_on:
-      db-prod:
-        condition: service_healthy
+    # depends_on:
+    #   db-prod:
+    #     condition: service_healthy
     # healthcheck:
       # test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       # interval: 30s
@@ -127,15 +119,14 @@ services:
   nginx:
     image: nginx:alpine
     profiles: ["prod"]
-    container_name: channel-nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - "${NGINX_HTTP_PORT:-80}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro      
-    depends_on:
-      api-prod:
-        condition: service_healthy
+    # depends_on:
+    #   api-prod:
+    #     condition: service_healthy
     networks:
       - channel
     logging:
