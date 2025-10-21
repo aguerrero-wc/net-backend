@@ -16,9 +16,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:5173',
-      'http://localhost:3000', // Por si usas otro puerto para testing
-      'http://devel1.klmsystem.test:5173', // Tu dominio personalizado
-      'http://devel1.klmsystem.test', // Sin puerto también
+      'https://windowschannel.us',
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
