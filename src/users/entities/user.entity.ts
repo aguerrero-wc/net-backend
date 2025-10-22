@@ -19,11 +19,15 @@ export class User {
   @Column()
   lastName: string;
 
-  @Column()
+  @Column({unique: true})
   email: string;
 
-  @Column()
+  @Column({ select: false })
   password: string;
+
+  // 🆕 CAMPO CRÍTICO PARA REFRESH TOKENS
+  @Column({type: 'varchar', nullable: true, select: false })
+  hashedRefreshToken: string | null;
 
   // Información adicional
   @Column({ nullable: true })
@@ -52,7 +56,7 @@ export class User {
   @Column({ default: false })
   twoFactorEnabled: boolean;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, select: false })
   twoFactorSecret: string;
 
   // Sesiones

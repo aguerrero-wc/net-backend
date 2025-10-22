@@ -1,23 +1,27 @@
-// tenant.controller.ts
 import {
   Controller,
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
   Query,
+  UseGuards
 } from '@nestjs/common';
 import { TenantService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { Tenant } from './entities/tenant.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
+
 
 @Controller('tenants')
+@UseGuards(JwtAuthGuard)
 export class TenantController {
   constructor(private readonly tenantService: TenantService) {}
 
@@ -28,7 +32,7 @@ export class TenantController {
   }
 
   @Get()
-  async findAll(): Promise<Tenant[]> {
+  async findAll(@CurrentUser() user: User): Promise<Tenant[]> {
     return await this.tenantService.findAll();
   }
 
@@ -38,7 +42,7 @@ export class TenantController {
   }
 
   @Get(':id')
-  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<Tenant> {
+  async findById(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User): Promise<Tenant> {
     return await this.tenantService.findById(id);
   }
 

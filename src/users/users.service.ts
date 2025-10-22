@@ -22,9 +22,6 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  /**
-   * Excluir campos sensibles de la respuesta
-   */
   private excludeSensitiveFields(user: User): Omit<User, 'password' | 'emailVerificationToken' | 'twoFactorSecret'> {
     const { password, emailVerificationToken, twoFactorSecret, ...userResponse } = user;
     return {
@@ -327,6 +324,83 @@ export class UsersService {
     await this.userRepository.update(id, {
       lastLoginAt: new Date(),
       lastLoginIp: ip
+    });
+  }
+
+  /**
+   * Actualizar el refresh token del usuario
+   * Se ejecuta cuando el usuario hace login exitoso
+   */
+  async updateRefreshToken(userId: string, refreshToken: string): Promise<void> {
+    // Hashear el refresh token antes de guardarlo
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    
+    await this.userRepository.update(userId, {
+      hashedRefreshToken
+    });
+  }
+
+  /**
+   * Verificar si el refresh token coincide con el hash almacenado
+   * Se ejecuta cuando se solicita un nuevo access token
+   * Retorna el usuario si el token es válido, null si no coincide
+   */
+  async getUserIfRefreshTokenMatches(
+    userId: string, 
+    refreshToken: string
+  ): Promise<User | null> {
+    // Obtener el usuario con el hashedRefreshToken
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: [
+        'id',
+        'firstName',
+        'lastName',
+        'email',
+        'hashedRefreshToken',
+        'avatar',
+        'phone',
+        'timezone',
+        'language',
+        'preferences',
+        'emailVerified',
+        'twoFactorEnabled',
+        'lastLoginAt',
+        'lastLoginIp',
+        'isActive',
+        'isBlocked',
+        'createdAt',
+        'updatedAt'
+      ]
+    });
+
+    if (!user || !user.hashedRefreshToken) {
+      return null;
+    }
+
+    // Comparar el refresh token recibido con el hash almacenado
+    const isRefreshTokenMatching = await bcrypt.compare(
+      refreshToken,
+      user.hashedRefreshToken
+    );
+
+    if (!isRefreshTokenMatching) {
+      return null;
+    }
+
+    // Si coincide, retornar el usuario (sin el hash por seguridad)
+    const { hashedRefreshToken, ...userWithoutHash } = user;
+    return userWithoutHash as User;
+  }
+
+  /**
+   * Remover el refresh token del usuario
+   * Se ejecuta cuando el usuario hace logout
+   * Invalida el refresh token actual
+   */
+  async removeRefreshToken(userId: string): Promise<void> {
+    await this.userRepository.update(userId, {
+      hashedRefreshToken: null
     });
   }
 

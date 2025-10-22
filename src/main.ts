@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,12 +13,14 @@ async function bootstrap() {
     transform: true,  // transforma payload a instancias de clases DTO
   }));
 
+  app.use(cookieParser());
   
   app.enableCors({
     origin: [
       'http://localhost:5173',
       'https://windowschannel.us',
     ],
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type', 
@@ -28,7 +31,6 @@ async function bootstrap() {
       'Origin',
       'X-Requested-With'
     ],
-    credentials: true,
   });
   await app.listen(process.env.APP_PORT ?? 3000);
 }
