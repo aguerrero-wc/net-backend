@@ -33,10 +33,10 @@ services:
       NODE_ENV: development
       APP_PORT: ${APP_PORT:-3000}
       DATABASE_HOST: db-dev
-      POSTGRES_DB: ${POSTGRES_DB_DEV}
-      POSTGRES_USER: ${POSTGRES_USER_DEV}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_DEV}
-      # POSTGRES_PORT: 5432
+      DATABASE_NAME: ${POSTGRES_DB_DEV}
+      DATABASE_USER: ${POSTGRES_USER_DEV}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD_DEV}
+      DATABASE_PORT: ${POSTGRES_PORT_DEV}
     volumes:
       - ./:/usr/src/app
       - /usr/src/app/node_modules
