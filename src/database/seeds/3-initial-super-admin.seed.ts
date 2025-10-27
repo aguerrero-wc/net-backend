@@ -52,9 +52,11 @@ export class InitialSuperAdminSeed {
 
     if (!mainTenant) {
       // Si tampoco existe, intentar obtener el primer tenant disponible
-      mainTenant = await tenantRepository.findOne({
+      const tenants = await tenantRepository.find({
         order: { createdAt: 'ASC' },
+        take: 1,
       });
+      mainTenant = tenants[0] || null;
     }
 
     if (!mainTenant) {

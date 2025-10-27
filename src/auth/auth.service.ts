@@ -46,7 +46,7 @@ export class AuthService {
    */
   async signIn(signInDto: SignInDto, ip: string): Promise<{ accessToken: string; refreshToken: string; user: Partial<User> }> {
     // 1. Validar credenciales
-    const user = await this.validateUser(signInDto.email, signInDto.password);
+    const user = await this.validateUser(signInDto.identifier, signInDto.password);
 
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -84,9 +84,14 @@ export class AuthService {
   /**
    * Validar credenciales de usuario (usado por LocalStrategy)
    */
-  async validateUser(email: string, password: string): Promise<User | null> {
-    const user = await this.usersService.findByEmail(email);
+  async validateUser(identifier: string, password: string): Promise<User | null> {
+    
+    if (!identifier || !password) {
+      return null;
+    }
 
+    const user = await this.usersService.findByEmailOrNickname(identifier);
+    
     if (!user) {
       return null;
     }

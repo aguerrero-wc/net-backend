@@ -404,4 +404,18 @@ export class UsersService {
     });
   }
 
+  /**
+   * Buscar usuario por email o nickname
+  */
+  async findByEmailOrNickname(identifier: string): Promise<User | null> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.email = :identifier', { identifier })
+      .orWhere('user.nickname = :identifier', { identifier })
+      .addSelect('user.password') 
+      .getOne();
+
+    return user || null;
+  }
+
 }

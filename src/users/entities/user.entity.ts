@@ -19,6 +19,9 @@ export class User {
   @Column()
   lastName: string;
 
+  @Column({ type: 'varchar', unique: true})
+  nickname: string;
+
   @Column({unique: true})
   email: string;
 
@@ -30,16 +33,16 @@ export class User {
   hashedRefreshToken: string | null;
 
   // Información adicional
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   avatar: string | null; // URL del avatar
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phone: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   timezone: string | null;
 
-  @Column({ default: 'es' })
+  @Column({ type: 'varchar', default: 'es' })
   language: string;
 
   // Configuración de usuario
@@ -50,20 +53,20 @@ export class User {
   @Column({ default: false })
   emailVerified: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   emailVerificationToken: string | null;
 
   @Column({ default: false })
   twoFactorEnabled: boolean;
 
-  @Column({ nullable: true, select: false })
+  @Column({ type: 'varchar', nullable: true, select: false })
   twoFactorSecret: string | null;
 
   // Sesiones
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt: Date | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   lastLoginIp: string | null;
 
   // Estado
@@ -73,7 +76,7 @@ export class User {
   @Column({ default: false })
   isBlocked: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   blockedReason: string | null;
 
   @OneToMany(() => UserTenantRole, utr => utr.user)

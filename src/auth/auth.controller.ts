@@ -55,7 +55,7 @@ export class AuthController {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     
     const result = await this.authService.signIn(
-      { email: user.email, password: signInDto.password },
+      { identifier: user.email || user.nickname, password: signInDto.password },
       ip,
     );
 

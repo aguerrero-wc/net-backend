@@ -8,7 +8,7 @@ import { User } from '../../users/entities/user.entity';
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super({
-      usernameField: 'email', // Por defecto Passport busca 'username', cambiamos a 'email'
+      usernameField: 'identifier', // Por defecto Passport busca 'username', cambiamos a 'email'
       passwordField: 'password',
     });
   }
@@ -17,8 +17,8 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
    * Passport ejecuta automáticamente este método cuando se usa LocalAuthGuard
    * Recibe email y password del request body
    */
-  async validate(email: string, password: string): Promise<User> {
-    const user = await this.authService.validateUser(email, password);
+  async validate(identifier: string, password: string): Promise<User> {
+    const user = await this.authService.validateUser(identifier, password);
     
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
