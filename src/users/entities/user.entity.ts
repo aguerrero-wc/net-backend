@@ -31,40 +31,40 @@ export class User {
 
   // Información adicional
   @Column({ nullable: true })
-  avatar: string; // URL del avatar
+  avatar: string | null; // URL del avatar
 
   @Column({ nullable: true })
-  phone: string;
+  phone: string | null;
 
   @Column({ nullable: true })
-  timezone: string;
+  timezone: string | null;
 
   @Column({ default: 'es' })
   language: string;
 
   // Configuración de usuario
   @Column({ type: 'jsonb', nullable: true })
-  preferences: Record<string, any>; // Preferencias UI, notificaciones, etc.
+  preferences: Record<string, any> | null; // Preferencias UI, notificaciones, etc.
 
   // Autenticación
   @Column({ default: false })
   emailVerified: boolean;
 
   @Column({ nullable: true })
-  emailVerificationToken: string;
+  emailVerificationToken: string | null;
 
   @Column({ default: false })
   twoFactorEnabled: boolean;
 
   @Column({ nullable: true, select: false })
-  twoFactorSecret: string;
+  twoFactorSecret: string | null;
 
   // Sesiones
   @Column({ type: 'timestamp', nullable: true })
-  lastLoginAt: Date;
+  lastLoginAt: Date | null;
 
   @Column({ nullable: true })
-  lastLoginIp: string;
+  lastLoginIp: string | null;
 
   // Estado
   @Column({ default: true })
@@ -74,7 +74,7 @@ export class User {
   isBlocked: boolean;
 
   @Column({ nullable: true })
-  blockedReason: string;
+  blockedReason: string | null;
 
   @OneToMany(() => UserTenantRole, utr => utr.user)
   tenantRoles: UserTenantRole[];
