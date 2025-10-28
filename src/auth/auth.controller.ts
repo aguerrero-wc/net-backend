@@ -51,6 +51,8 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log('dasdasdasdasdsadasdas', req.user);
+    
     // LocalStrategy ya validó las credenciales y adjuntó el usuario a req.user
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     
