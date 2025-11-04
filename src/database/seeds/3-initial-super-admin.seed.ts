@@ -63,17 +63,14 @@ export class InitialSuperAdminSeed {
       // Solo si no hay ningún tenant, crear uno nuevo con dominio único
       const timestamp = Date.now();
       mainTenant = tenantRepository.create({
-        name: 'Sistema',
-        slug: 'system',
-        domain: `system-${timestamp}.channel.com`, // Dominio único con timestamp
+        name: 'Windows Channel',
+        slug: 'windows-channel',
+        domain: `windowschannel.us`,
         description: 'Tenant del sistema para super administradores',
-        plan: 'enterprise',
-        maxUsers: 999,
-        maxStorage: 999999,
         isActive: true,
       });
       await tenantRepository.save(mainTenant);
-      console.log(`   ✓ Created system tenant with domain: system-${timestamp}.channel.com`);
+      console.log(`   ✓ Created system tenant with domain: windowschannel.us`);
     } else {
       console.log(`   ⊚ Using existing tenant: ${mainTenant.name} (${mainTenant.domain})`);
     }
@@ -126,7 +123,7 @@ export class InitialSuperAdminSeed {
     console.log(`  👤 Name: ${superAdminFirstName} ${superAdminLastName}`);
     console.log('  🔑 Password: ********');
     console.log(`  🏢 Tenant: ${mainTenant.name} (${mainTenant.slug})`);
-    console.log('  👑 Role: Super Administrador');
+    console.log(`  👑 Role: Super Administrador`);  
     console.log('═══════════════════════════════════════');
     console.log('⚠️  IMPORTANTE: Guarda estas credenciales de forma segura!\n');
   }

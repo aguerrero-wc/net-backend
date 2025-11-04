@@ -57,9 +57,6 @@ export class TenantConfiguration {
   @Column({ default: true })
   notificationsEnabled: boolean;
 
-  @Column({ default: true })
-  searchEnabled: boolean;
-
   @Column({ default: false })
   maintenanceMode: boolean;
 
@@ -102,16 +99,6 @@ export class TenantConfiguration {
 
   @Column({ default: 'es' })
   defaultLanguage: string;
-
-  @Column({ default: 'USD' })
-  defaultCurrency: string;
-
-  @Column({ default: 'DD/MM/YYYY' })
-  dateFormat: string;
-
-  // === CONFIGURACIÓN DE ARCHIVOS ===
-  @Column({ default: 10 }) // MB
-  maxFileUploadSize: number;
 
   @Column({ type: 'jsonb', default: ['jpg', 'png', 'pdf', 'docx'] })
   allowedFileTypes: string[];

@@ -1,40 +1,37 @@
 import { 
   IsString, 
-  IsOptional, 
   IsEmail, 
   IsBoolean, 
-  IsNumber, 
-  IsDateString,
-  IsObject,
+  IsOptional, 
+  IsUrl,
+  ValidateNested,
   IsNotEmpty,
   MinLength,
   MaxLength,
-  Min,
-  IsIn
+  Matches
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Type } from 'class-transformer';
+import { CreateTenantConfigurationDto } from './create-tenant-configuration.dto';
 
 export class CreateTenantDto {
   @IsString()
   @IsNotEmpty()
-  @MinLength(2)
+  @MinLength(3)
   @MaxLength(100)
   name: string;
 
   @IsString()
   @IsNotEmpty()
-  @MinLength(2)
+  @MinLength(3)
   @MaxLength(50)
-  @Transform(({ value }) => value?.toLowerCase())
+  @Matches(/^[a-z0-9-]+$/, {
+    message: 'El slug solo puede contener letras minúsculas, números y guiones'
+  })
   slug: string;
 
-  @IsString()
-  @IsNotEmpty()
-  domain: string;
-
   @IsOptional()
-  @IsString()
-  customDomain?: string;
+  @IsUrl()
+  domain?: string;
 
   @IsOptional()
   @IsString()
@@ -42,11 +39,11 @@ export class CreateTenantDto {
   description?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUrl()
   logo?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUrl()
   favicon?: string;
 
   @IsOptional()
@@ -55,41 +52,17 @@ export class CreateTenantDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^[\d\s\-\+\(\)]+$/, {
+    message: 'Formato de teléfono inválido'
+  })
   contactPhone?: string;
 
   @IsOptional()
-  @IsString()
-  @IsIn(['free', 'basic', 'premium', 'enterprise'])
-  plan?: string = 'free';
-
-  @IsOptional()
-  @IsDateString()
-  planExpiresAt?: Date;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  maxUsers?: number = 10;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(100)
-  maxStorage?: number = 1000;
-
-  @IsOptional()
   @IsBoolean()
-  isActive?: boolean = true;
+  isActive?: boolean;
 
   @IsOptional()
-  @IsBoolean()
-  isSuspended?: boolean = false;
-
-  @IsOptional()
-  @IsString()
-  suspendedReason?: string;
-
-  @IsOptional()
-  @IsObject()
-  metadata?: Record<string, any>;
+  @ValidateNested()
+  @Type(() => CreateTenantConfigurationDto)
+  configuration?: CreateTenantConfigurationDto;
 }
-

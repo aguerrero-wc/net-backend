@@ -21,64 +21,34 @@ export class Tenant {
   name: string;
 
   @Column({ unique: true })
-  slug: string; // client-1, mi-empresa, etc. (URL friendly)
-
-  @Column({ unique: true })
-  domain: string; // client1.tudominio.com
+  slug: string;
 
   @Column({ nullable: true })
-  customDomain: string; // www.clienteempresa.com (opcional)
+  domain: string;
 
   @Column({ nullable: true })
   description: string;
 
   @Column({ nullable: true })
-  logo: string; // URL del logo
+  logo: string; 
 
   @Column({ nullable: true })
-  favicon: string; // URL del favicon
+  favicon: string;
 
-  // Información de contacto
   @Column({ nullable: true })
   contactEmail: string;
 
   @Column({ nullable: true })
   contactPhone: string;
 
-  // Plan/Suscripción
-  @Column({ default: 'free' })
-  plan: string; // 'free', 'basic', 'premium', 'enterprise'
-
-  @Column({ type: 'timestamp', nullable: true })
-  planExpiresAt: Date;
-
-  // Límites según el plan
-  @Column({ default: 10 })
-  maxUsers: number;
-
-  @Column({ default: 1000 })
-  maxStorage: number; // MB
-
-  // Estado
   @Column({ default: true })
   isActive: boolean;
-
-  @Column({ default: false })
-  isSuspended: boolean;
-
-  @Column({ nullable: true })
-  suspendedReason: string;
-
-  // Configuración básica (puede ir aquí o en tabla separada)
-  @Column({ type: 'jsonb', nullable: true })
-  metadata: Record<string, any>; // Datos extra flexibles
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-
 
   // Relaciones
   @OneToMany(() => UserTenantRole, utr => utr.tenant, { cascade: true })
@@ -88,6 +58,5 @@ export class Tenant {
   configuration: TenantConfiguration;
 
   @OneToMany(() => TenantServiceConfig, serviceConfig => serviceConfig.tenant, { cascade: true })
-  serviceConfigs: TenantServiceConfig[];
-  
+  serviceConfigs: TenantServiceConfig[];  
 }

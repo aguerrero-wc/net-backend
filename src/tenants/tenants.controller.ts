@@ -1,80 +1,128 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
   Delete,
-  ParseUUIDPipe,
+  Query,
   HttpCode,
   HttpStatus,
-  Query,
-  UseGuards
+  ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
-import { TenantService } from './tenants.service';
+import { TenantsService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
-import { Tenant } from './entities/tenant.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '../users/entities/user.entity';
-
 
 @Controller('tenants')
-@UseGuards(JwtAuthGuard)
-export class TenantController {
-  constructor(private readonly tenantService: TenantService) {}
+export class TenantsController {
+  constructor(private readonly tenantsService: TenantsService) {}
 
+  /**
+   * POST /tenants
+   * Crear un nuevo tenant
+   */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createTenantDto: CreateTenantDto): Promise<Tenant> {
-    return await this.tenantService.create(createTenantDto);
+  create(@Body() createTenantDto: CreateTenantDto) {
+    return this.tenantsService.create(createTenantDto);
   }
 
+  /**
+   * GET /tenants
+   * Obtener todos los tenants con paginación y filtros
+   */
   @Get()
-  async findAll(@CurrentUser() user: User): Promise<Tenant[]> {
-    return await this.tenantService.findAll();
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('isActive') isActive?: string,
+  ) {
+    return this.tenantsService.findAll({
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 10,
+      search,
+      isActive: isActive !== undefined ? isActive === 'true' : undefined,
+    });
   }
 
-  @Get('search')
-  async findByDomain(@Query('domain') domain: string): Promise<Tenant> {
-    return await this.tenantService.findByDomain(domain);
+  /**
+   * GET /tenants/stats
+   * Obtener estadísticas de tenants
+   */
+  @Get('stats')
+  getStats() {
+    return this.tenantsService.getStats();
   }
 
-  @Get(':id')
-  async findById(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User): Promise<Tenant> {
-    return await this.tenantService.findById(id);
-  }
-
+  /**
+   * GET /tenants/slug/:slug
+   * Obtener un tenant por slug
+   */
   @Get('slug/:slug')
-  async findBySlug(@Param('slug') slug: string): Promise<Tenant> {
-    return await this.tenantService.findBySlug(slug);
+  findBySlug(@Param('slug') slug: string) {
+    return this.tenantsService.findBySlug(slug);
   }
 
-  // @Patch(':id')
-  // async update(
-  //   @Param('id', ParseUUIDPipe) id: string,
-  //   @Body() updateTenantDto: UpdateTenantDto,
-  // ): Promise<Tenant> {
-  //   return await this.tenantService.update(id, updateTenantDto);
-  // }
+  /**
+   * GET /tenants/domain/:domain
+   * Obtener un tenant por dominio
+   */
+  @Get('domain/:domain')
+  findByDomain(@Param('domain') domain: string) {
+    return this.tenantsService.findByDomain(domain);
+  }
 
+  /**
+   * GET /tenants/:id
+   * Obtener un tenant por ID
+   */
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tenantsService.findOne(id);
+  }
+
+  /**
+   * PATCH /tenants/:id
+   * Actualizar un tenant
+   */
+  @Patch(':id')
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateTenantDto: UpdateTenantDto,
+  ) {
+    return this.tenantsService.update(id, updateTenantDto);
+  }
+
+  /**
+   * PATCH /tenants/:id/toggle-active
+   * Activar/Desactivar un tenant
+   */
+  @Patch(':id/toggle-active')
+  toggleActive(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tenantsService.toggleActive(id);
+  }
+
+  /**
+   * DELETE /tenants/:id
+   * Desactivar un tenant (soft delete)
+   */
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return await this.tenantService.remove(id);
+  @HttpCode(HttpStatus.OK)
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tenantsService.remove(id);
   }
 
-  // @Patch(':id/suspend')
-  // async suspend(
-  //   @Param('id', ParseUUIDPipe) id: string,
-  //   @Body('reason') reason?: string,
-  // ): Promise<Tenant> {
-  //   return await this.tenantService.suspend(id, reason);
-  // }
-
-  // @Patch(':id/reactivate')
-  // async reactivate(@Param('id', ParseUUIDPipe) id: string): Promise<Tenant> {
-  //   return await this.tenantService.reactivate(id);
-  // }
+  /**
+   * DELETE /tenants/:id/hard
+   * Eliminar permanentemente un tenant
+   */
+  @Delete(':id/hard')
+  @HttpCode(HttpStatus.OK)
+  hardDelete(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tenantsService.hardDelete(id);
+  }
 }

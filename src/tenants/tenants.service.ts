@@ -1,4 +1,3 @@
-// tenant.service.ts
 import { 
   Injectable, 
   NotFoundException, 
@@ -8,67 +7,138 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tenant } from './entities/tenant.entity';
+import { TenantConfiguration } from './entities/tenant-configuration.entity';
+
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 
 @Injectable()
-export class TenantService {
+export class TenantsService {
   constructor(
     @InjectRepository(Tenant)
     private readonly tenantRepository: Repository<Tenant>,
+    
+    @InjectRepository(TenantConfiguration)
+    private readonly configRepository: Repository<TenantConfiguration>,
   ) {}
 
+  /**
+   * Crear un nuevo tenant con su configuración
+   */
   async create(createTenantDto: CreateTenantDto): Promise<Tenant> {
-    // Verificar si ya existe un tenant con el mismo name, slug o domain
+    // Verificar que no exista un tenant con el mismo slug o nombre
     const existingTenant = await this.tenantRepository.findOne({
       where: [
-        { name: createTenantDto.name },
         { slug: createTenantDto.slug },
-        { domain: createTenantDto.domain },
-      ],
+        { name: createTenantDto.name }
+      ]
     });
 
     if (existingTenant) {
-      if (existingTenant.name === createTenantDto.name) {
-        throw new ConflictException('Ya existe un tenant con ese nombre');
-      }
       if (existingTenant.slug === createTenantDto.slug) {
         throw new ConflictException('Ya existe un tenant con ese slug');
       }
-      if (existingTenant.domain === createTenantDto.domain) {
+      if (existingTenant.name === createTenantDto.name) {
+        throw new ConflictException('Ya existe un tenant con ese nombre');
+      }
+    }
+
+    // Verificar dominio si se proporciona
+    if (createTenantDto.domain) {
+      const existingDomain = await this.tenantRepository.findOne({
+        where: { domain: createTenantDto.domain }
+      });
+      if (existingDomain) {
         throw new ConflictException('Ya existe un tenant con ese dominio');
       }
     }
 
-    // Verificar customDomain si se proporciona
-    if (createTenantDto.customDomain) {
-      const existingCustomDomain = await this.tenantRepository.findOne({
-        where: { customDomain: createTenantDto.customDomain },
-      });
-      
-      if (existingCustomDomain) {
-        throw new ConflictException('Ya existe un tenant con ese dominio personalizado');
-      }
-    }
-
-    try {
-      const tenant = this.tenantRepository.create(createTenantDto);
-      return await this.tenantRepository.save(tenant);
-    } catch (error) {
-      throw new BadRequestException('Error al crear el tenant');
-    }
-  }
-
-  async findAll(): Promise<Tenant[]> {
-    return await this.tenantRepository.find({
-      order: { createdAt: 'DESC' },
+    // Crear el tenant
+    const tenant = this.tenantRepository.create({
+      name: createTenantDto.name,
+      slug: createTenantDto.slug,
+      domain: createTenantDto.domain,
+      description: createTenantDto.description,
+      logo: createTenantDto.logo,
+      favicon: createTenantDto.favicon,
+      contactEmail: createTenantDto.contactEmail,
+      contactPhone: createTenantDto.contactPhone,
+      isActive: createTenantDto.isActive ?? true,
     });
+
+    // Guardar tenant
+    const savedTenant = await this.tenantRepository.save(tenant);
+
+    // Crear configuración por defecto o con los valores proporcionados
+    const config = this.configRepository.create({
+      tenant: savedTenant,
+      tenantId: savedTenant.id,
+      ...createTenantDto.configuration,
+      // Valores por defecto si no se proporcionan
+      primaryColor: createTenantDto.configuration?.primaryColor || '#E6600D',
+      secondaryColor: createTenantDto.configuration?.secondaryColor || '#FF7A2F',
+      accentColor: createTenantDto.configuration?.accentColor || '#10B981',
+      theme: createTenantDto.configuration?.theme || 'light',
+      uiStyle: createTenantDto.configuration?.uiStyle || 'modern',
+    });
+
+    await this.configRepository.save(config);
+
+    // Retornar tenant con configuración
+    return this.findOne(savedTenant.id);
   }
 
-  async findById(id: string): Promise<Tenant> {
+  /**
+   * Obtener todos los tenants con paginación y filtros
+   */
+  async findAll(options?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    isActive?: boolean;
+  }): Promise<{ data: Tenant[]; total: number; page: number; limit: number }> {
+    const page = options?.page || 1;
+    const limit = options?.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.tenantRepository
+      .createQueryBuilder('tenant')
+      .leftJoinAndSelect('tenant.configuration', 'configuration')
+      .orderBy('tenant.createdAt', 'DESC');
+
+    // Filtro de búsqueda
+    if (options?.search) {
+      queryBuilder.where(
+        '(tenant.name ILIKE :search OR tenant.slug ILIKE :search OR tenant.description ILIKE :search)',
+        { search: `%${options.search}%` }
+      );
+    }
+
+    // Filtro de estado activo
+    if (options?.isActive !== undefined) {
+      queryBuilder.andWhere('tenant.isActive = :isActive', { isActive: options.isActive });
+    }
+
+    const [data, total] = await queryBuilder
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  /**
+   * Obtener un tenant por ID
+   */
+  async findOne(id: string): Promise<Tenant> {
     const tenant = await this.tenantRepository.findOne({
       where: { id },
-      relations: ['userRoles', 'configuration'],
+      relations: ['configuration', 'userRoles', 'serviceConfigs'],
     });
 
     if (!tenant) {
@@ -78,10 +148,13 @@ export class TenantService {
     return tenant;
   }
 
+  /**
+   * Obtener un tenant por slug
+   */
   async findBySlug(slug: string): Promise<Tenant> {
     const tenant = await this.tenantRepository.findOne({
       where: { slug },
-      relations: ['userRoles', 'configuration'],
+      relations: ['configuration'],
     });
 
     if (!tenant) {
@@ -91,13 +164,13 @@ export class TenantService {
     return tenant;
   }
 
+  /**
+   * Obtener un tenant por dominio
+   */
   async findByDomain(domain: string): Promise<Tenant> {
     const tenant = await this.tenantRepository.findOne({
-      where: [
-        { domain },
-        { customDomain: domain },
-      ],
-      relations: ['userRoles', 'configuration'],
+      where: { domain },
+      relations: ['configuration'],
     });
 
     if (!tenant) {
@@ -107,60 +180,128 @@ export class TenantService {
     return tenant;
   }
 
-  // async update(id: string, updateTenantDto: UpdateTenantDto): Promise<Tenant> {
-  //   const tenant = await this.findById(id);
+  /**
+   * Actualizar un tenant
+   */
+  async update(id: string, updateTenantDto: UpdateTenantDto): Promise<Tenant> {
+    const tenant = await this.findOne(id);
 
-  //   // Verificar conflictos solo si se están actualizando campos únicos
-  //   if (updateTenantDto.name || updateTenantDto.slug || updateTenantDto.domain || updateTenantDto.customDomain) {
-  //     const conflicts = [];
-      
-  //     if (updateTenantDto.name) conflicts.push({ name: updateTenantDto.name });
-  //     if (updateTenantDto.slug) conflicts.push({ slug: updateTenantDto.slug });
-  //     if (updateTenantDto.domain) conflicts.push({ domain: updateTenantDto.domain });
-  //     if (updateTenantDto.customDomain) conflicts.push({ customDomain: updateTenantDto.customDomain });
-
-  //     if (conflicts.length > 0) {
-  //       const existingTenant = await this.tenantRepository.findOne({
-  //         where: conflicts,
-  //       });
-
-  //       if (existingTenant && existingTenant.id !== id) {
-  //         throw new ConflictException('Ya existe un tenant con alguno de los valores únicos proporcionados');
-  //       }
-  //     }
-  //   }
-
-  //   try {
-  //     await this.tenantRepository.update(id, updateTenantDto);
-  //     return await this.findById(id);
-  //   } catch (error) {
-  //     throw new BadRequestException('Error al actualizar el tenant');
-  //   }
-  // }
-
-  async remove(id: string): Promise<void> {
-    const tenant = await this.findById(id);
-    
-    try {
-      await this.tenantRepository.remove(tenant);
-    } catch (error) {
-      throw new BadRequestException('Error al eliminar el tenant');
+    // Verificar slug único si se está actualizando
+    if (updateTenantDto.slug && updateTenantDto.slug !== tenant.slug) {
+      const existingSlug = await this.tenantRepository.findOne({
+        where: { slug: updateTenantDto.slug }
+      });
+      if (existingSlug) {
+        throw new ConflictException('Ya existe un tenant con ese slug');
+      }
     }
+
+    // Verificar nombre único si se está actualizando
+    if (updateTenantDto.name && updateTenantDto.name !== tenant.name) {
+      const existingName = await this.tenantRepository.findOne({
+        where: { name: updateTenantDto.name }
+      });
+      if (existingName) {
+        throw new ConflictException('Ya existe un tenant con ese nombre');
+      }
+    }
+
+    // Verificar dominio único si se está actualizando
+    if (updateTenantDto.domain && updateTenantDto.domain !== tenant.domain) {
+      const existingDomain = await this.tenantRepository.findOne({
+        where: { domain: updateTenantDto.domain }
+      });
+      if (existingDomain) {
+        throw new ConflictException('Ya existe un tenant con ese dominio');
+      }
+    }
+
+    // Actualizar datos del tenant
+    Object.assign(tenant, {
+      name: updateTenantDto.name ?? tenant.name,
+      slug: updateTenantDto.slug ?? tenant.slug,
+      domain: updateTenantDto.domain ?? tenant.domain,
+      description: updateTenantDto.description ?? tenant.description,
+      logo: updateTenantDto.logo ?? tenant.logo,
+      favicon: updateTenantDto.favicon ?? tenant.favicon,
+      contactEmail: updateTenantDto.contactEmail ?? tenant.contactEmail,
+      contactPhone: updateTenantDto.contactPhone ?? tenant.contactPhone,
+      isActive: updateTenantDto.isActive ?? tenant.isActive,
+    });
+
+    await this.tenantRepository.save(tenant);
+
+    // Actualizar configuración si se proporciona
+    if (updateTenantDto.configuration) {
+      const config = await this.configRepository.findOne({
+        where: { tenantId: id }
+      });
+
+      if (config) {
+        Object.assign(config, updateTenantDto.configuration);
+        await this.configRepository.save(config);
+      }
+    }
+
+    return this.findOne(id);
   }
 
-  // async suspend(id: string, reason?: string): Promise<Tenant> {
-  //   return await this.update(id, {
-  //     isSuspended: true,
-  //     suspendedReason: reason || 'Suspendido por el administrador',
-  //     isActive: false,
-  //   });
-  // }
+  /**
+   * Activar/Desactivar un tenant
+   */
+  async toggleActive(id: string): Promise<Tenant> {
+    const tenant = await this.findOne(id);
+    tenant.isActive = !tenant.isActive;
+    await this.tenantRepository.save(tenant);
+    return this.findOne(id);
+  }
 
-  // async reactivate(id: string): Promise<Tenant> {
-  //   return await this.update(id, {
-  //     isSuspended: false,
-  //     suspendedReason: null,
-  //     isActive: true,
-  //   });
-  // }
+  /**
+   * Eliminar un tenant (soft delete - cambiar isActive a false)
+   */
+  async remove(id: string): Promise<{ message: string }> {
+    const tenant = await this.findOne(id);
+    
+    // Soft delete - solo desactivar
+    tenant.isActive = false;
+    await this.tenantRepository.save(tenant);
+
+    return { message: `Tenant ${tenant.name} desactivado correctamente` };
+  }
+
+  /**
+   * Eliminar permanentemente un tenant
+   */
+  async hardDelete(id: string): Promise<{ message: string }> {
+    const tenant = await this.findOne(id);
+    
+    await this.tenantRepository.remove(tenant);
+
+    return { message: `Tenant eliminado permanentemente` };
+  }
+
+  /**
+   * Obtener estadísticas de tenants
+   */
+  async getStats(): Promise<{
+    total: number;
+    active: number;
+    inactive: number;
+    withDomain: number;
+  }> {
+    const total = await this.tenantRepository.count();
+    const active = await this.tenantRepository.count({ where: { isActive: true } });
+    const inactive = await this.tenantRepository.count({ where: { isActive: false } });
+    const withDomain = await this.tenantRepository
+      .createQueryBuilder('tenant')
+      .where('tenant.domain IS NOT NULL')
+      .getCount();
+
+    return {
+      total,
+      active,
+      inactive,
+      withDomain,
+    };
+  }
 }
