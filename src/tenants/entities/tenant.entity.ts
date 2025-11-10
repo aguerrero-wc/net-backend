@@ -10,7 +10,7 @@ import {
 import { UserTenantRole } from '../../user-tenant-roles/entities/user-tenant-role.entity';
 import { TenantConfiguration } from './tenant-configuration.entity';
 import { TenantServiceConfig } from './tenant-service-config.entity';
-
+import { TenantContact } from './tenant-contact.entity';
 
 @Entity('tenants')
 export class Tenant {
@@ -58,5 +58,8 @@ export class Tenant {
   configuration: TenantConfiguration;
 
   @OneToMany(() => TenantServiceConfig, serviceConfig => serviceConfig.tenant, { cascade: true })
-  serviceConfigs: TenantServiceConfig[];  
+  serviceConfigs: TenantServiceConfig[];
+
+  @OneToMany(() => TenantContact, contact => contact.tenant, { cascade: true })
+  contacts: TenantContact[];
 }

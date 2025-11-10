@@ -8,10 +8,12 @@ import {
   IsNotEmpty,
   MinLength,
   MaxLength,
-  Matches
+  Matches,
+  IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateTenantConfigurationDto } from './create-tenant-configuration.dto';
+import { CreateTenantContactDto } from './create-tenant-contact.dto';
 
 export class CreateTenantDto {
   @IsString()
@@ -65,4 +67,10 @@ export class CreateTenantDto {
   @ValidateNested()
   @Type(() => CreateTenantConfigurationDto)
   configuration?: CreateTenantConfigurationDto;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateTenantContactDto)
+  contacts?: CreateTenantContactDto[];
 }

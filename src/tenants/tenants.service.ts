@@ -8,7 +8,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tenant } from './entities/tenant.entity';
 import { TenantConfiguration } from './entities/tenant-configuration.entity';
+import { ContactType, TenantContact } from './entities/tenant-contact.entity';
 
+import { CreateTenantContactDto } from './dto/create-tenant-contact.dto';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 
@@ -20,73 +22,88 @@ export class TenantsService {
     
     @InjectRepository(TenantConfiguration)
     private readonly configRepository: Repository<TenantConfiguration>,
+    
+    @InjectRepository(TenantContact)
+    private readonly contactRepository: Repository<TenantContact>,
   ) {}
 
   /**
    * Crear un nuevo tenant con su configuración
    */
-  async create(createTenantDto: CreateTenantDto): Promise<Tenant> {
-    // Verificar que no exista un tenant con el mismo slug o nombre
-    const existingTenant = await this.tenantRepository.findOne({
-      where: [
-        { slug: createTenantDto.slug },
-        { name: createTenantDto.name }
-      ]
-    });
+async create(createTenantDto: CreateTenantDto): Promise<Tenant> {
+  // Verificar que no exista un tenant con el mismo slug o nombre
+  const existingTenant = await this.tenantRepository.findOne({
+    where: [
+      { slug: createTenantDto.slug },
+      { name: createTenantDto.name }
+    ]
+  });
 
-    if (existingTenant) {
-      if (existingTenant.slug === createTenantDto.slug) {
-        throw new ConflictException('Ya existe un tenant con ese slug');
-      }
-      if (existingTenant.name === createTenantDto.name) {
-        throw new ConflictException('Ya existe un tenant con ese nombre');
-      }
+  if (existingTenant) {
+    if (existingTenant.slug === createTenantDto.slug) {
+      throw new ConflictException('Ya existe un tenant con ese slug');
     }
-
-    // Verificar dominio si se proporciona
-    if (createTenantDto.domain) {
-      const existingDomain = await this.tenantRepository.findOne({
-        where: { domain: createTenantDto.domain }
-      });
-      if (existingDomain) {
-        throw new ConflictException('Ya existe un tenant con ese dominio');
-      }
+    if (existingTenant.name === createTenantDto.name) {
+      throw new ConflictException('Ya existe un tenant con ese nombre');
     }
-
-    // Crear el tenant
-    const tenant = this.tenantRepository.create({
-      name: createTenantDto.name,
-      slug: createTenantDto.slug,
-      domain: createTenantDto.domain,
-      description: createTenantDto.description,
-      logo: createTenantDto.logo,
-      favicon: createTenantDto.favicon,
-      contactEmail: createTenantDto.contactEmail,
-      contactPhone: createTenantDto.contactPhone,
-      isActive: createTenantDto.isActive ?? true,
-    });
-
-    // Guardar tenant
-    const savedTenant = await this.tenantRepository.save(tenant);
-
-    // Crear configuración por defecto o con los valores proporcionados
-    const config = this.configRepository.create({
-      tenant: savedTenant,
-      tenantId: savedTenant.id,
-      ...createTenantDto.configuration,
-      // Valores por defecto si no se proporcionan
-      primaryColor: createTenantDto.configuration?.primaryColor || '#E6600D',
-      secondaryColor: createTenantDto.configuration?.secondaryColor || '#FF7A2F',
-      accentColor: createTenantDto.configuration?.accentColor || '#10B981',
-      theme: createTenantDto.configuration?.theme || 'light',
-      uiStyle: createTenantDto.configuration?.uiStyle || 'modern',
-    });
-
-    await this.configRepository.save(config);
-
-    // Retornar tenant con configuración
-    return this.findOne(savedTenant.id);
   }
+
+  // Verificar dominio si se proporciona
+  if (createTenantDto.domain) {
+    const existingDomain = await this.tenantRepository.findOne({
+      where: { domain: createTenantDto.domain }
+    });
+    if (existingDomain) {
+      throw new ConflictException('Ya existe un tenant con ese dominio');
+    }
+  }
+
+  // Crear el tenant
+  const tenant = this.tenantRepository.create({
+    name: createTenantDto.name,
+    slug: createTenantDto.slug,
+    domain: createTenantDto.domain,
+    description: createTenantDto.description,
+    logo: createTenantDto.logo,
+    favicon: createTenantDto.favicon,
+    contactEmail: createTenantDto.contactEmail,
+    contactPhone: createTenantDto.contactPhone,
+    isActive: createTenantDto.isActive ?? true,
+  });
+
+  // Guardar tenant
+  const savedTenant = await this.tenantRepository.save(tenant);
+
+  // Crear configuración por defecto o con los valores proporcionados
+  const config = this.configRepository.create({
+    tenant: savedTenant,
+    tenantId: savedTenant.id,
+    ...createTenantDto.configuration,
+    // Valores por defecto si no se proporcionan
+    primaryColor: createTenantDto.configuration?.primaryColor || '#E6600D',
+    secondaryColor: createTenantDto.configuration?.secondaryColor || '#FF7A2F',
+    accentColor: createTenantDto.configuration?.accentColor || '#10B981',
+    theme: createTenantDto.configuration?.theme || 'light',
+    uiStyle: createTenantDto.configuration?.uiStyle || 'modern',
+  });
+
+  await this.configRepository.save(config);
+
+  // ← NUEVO: Crear contactos si se proporcionan
+  if (createTenantDto.contacts && createTenantDto.contacts.length > 0) {
+    const tenantContacts = createTenantDto.contacts.map(contactDto => 
+      this.contactRepository.create({
+        ...contactDto,
+        tenantId: savedTenant.id,
+      })
+    );
+    
+    await this.contactRepository.save(tenantContacts);
+  }
+
+  // Retornar tenant con configuración y contactos
+  return this.findOne(savedTenant.id);
+}
 
   /**
    * Obtener todos los tenants con paginación y filtros
@@ -138,7 +155,7 @@ export class TenantsService {
   async findOne(id: string): Promise<Tenant> {
     const tenant = await this.tenantRepository.findOne({
       where: { id },
-      relations: ['configuration', 'userRoles', 'serviceConfigs'],
+      relations: ['configuration', 'userRoles', 'serviceConfigs', 'contacts'],
     });
 
     if (!tenant) {
@@ -304,4 +321,63 @@ export class TenantsService {
       withDomain,
     };
   }
+
+  // Crear contacto para un tenant
+  async createContact(tenantId: string, dto: CreateTenantContactDto) {
+    const tenant = await this.tenantRepository.findOne({ 
+      where: { id: tenantId } 
+    });
+    
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${tenantId} not found`);
+    }
+
+    const contact = this.contactRepository.create({
+      ...dto,
+      tenantId,
+    });
+
+    return this.contactRepository.save(contact);
+  }
+
+  // Obtener todos los contactos de un tenant
+  async getContactsByTenant(tenantId: string, type?: ContactType) {
+    const where: any = { tenantId, isActive: true };
+    if (type) {
+      where.type = type;
+    }
+
+    return this.contactRepository.find({
+      where,
+      order: { isPrimary: 'DESC', createdAt: 'ASC' },
+    });
+  }
+
+  // Obtener tenant con sus contactos
+  async findOneWithContacts(id: string) {
+    return this.tenantRepository.findOne({
+      where: { id },
+      relations: ['contacts'],
+    });
+  }
+
+  // Actualizar contacto
+  async updateContact(contactId: string, dto: Partial<CreateTenantContactDto>) {
+    const contact = await this.contactRepository.findOne({ 
+      where: { id: contactId } 
+    });
+    
+    if (!contact) {
+      throw new NotFoundException(`Contact ${contactId} not found`);
+    }
+
+    Object.assign(contact, dto);
+    return this.contactRepository.save(contact);
+  }
+
+  // Eliminar contacto (soft delete)
+  async deleteContact(contactId: string) {
+    return this.contactRepository.update(contactId, { isActive: false });
+  }
+
 }
