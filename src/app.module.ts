@@ -8,6 +8,7 @@ import { UserTenantRolesModule } from './user-tenant-roles/user-tenant-roles.mod
 import { PermissionsModule } from './permissions/permissions.module';
 import { AuthModule } from './auth/auth.module';
 import { getDatabaseConfig } from './config/database.config';
+import { CommonModule } from './common/common.module';
 
 
 @Module({
@@ -27,6 +28,7 @@ import { getDatabaseConfig } from './config/database.config';
     UserTenantRolesModule,
     PermissionsModule,
     AuthModule,
+    CommonModule,
   ],
 })
 export class AppModule {}

@@ -116,11 +116,6 @@ export class CreateTenantConfigurationDto {
   @IsObject()
   emailTemplates?: Record<string, any>;
 
-  // === CONFIGURACIÓN DE INTEGRACIONES ===
-  @IsOptional()
-  @IsObject()
-  integrations?: Record<string, any>;
-
   // === CONFIGURACIÓN DE REPORTES ===
   @IsOptional()
   @IsString()

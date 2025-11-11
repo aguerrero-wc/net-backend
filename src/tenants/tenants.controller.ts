@@ -20,14 +20,68 @@ import { UpdateTenantDto } from './dto/update-tenant.dto';
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
+private sanitizeTenantResponse(tenant: any) {
+  const { externalServices, ...tenantData } = tenant;
+
+  if (!externalServices || externalServices.length === 0) {
+    return {
+      ...tenantData,
+      externalServices: [],
+    };
+  }
+
+  // Campos que SÍ se pueden mostrar (no sensibles)
+  const nonSensitiveFields = [
+    'bucket',
+    'region',
+    'fromEmail',
+    'fromName',
+    'endpoint',
+    'appId',      // App ID no es secreto
+    'clientId',   // Client ID no es secreto
+    'publicKey',  // Public key no es secreto (Stripe)
+  ];
+
+  const sanitizedServices = externalServices.map(service => {
+    const { credentials, ...serviceData } = service;
+    
+    const maskedCredentials = {};
+    if (credentials) {
+      for (const [key, value] of Object.entries(credentials)) {
+        // Si el campo NO es sensible, mostrarlo completo
+        if (nonSensitiveFields.includes(key)) {
+          maskedCredentials[key] = value;
+        } else {
+          // Si es sensible, enmascarar
+          maskedCredentials[key] = '••••••••';
+        }
+      }
+    }
+
+    return {
+      ...serviceData,
+      credentials: maskedCredentials,
+      hasCredentials: credentials && Object.keys(credentials).length > 0,
+    };
+  });
+
+  return {
+    ...tenantData,
+    externalServices: sanitizedServices,
+  };
+}
+
   /**
    * POST /tenants
    * Crear un nuevo tenant
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createTenantDto: CreateTenantDto) {
-    return this.tenantsService.create(createTenantDto);
+  async create(@Body() createTenantDto: CreateTenantDto) {
+    const tenant = await this.tenantsService.create(createTenantDto);
+    console.log(tenant);
+    
+    return this.sanitizeTenantResponse(tenant);
   }
 
   /**

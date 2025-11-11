@@ -11,6 +11,7 @@ import { UserTenantRole } from '../../user-tenant-roles/entities/user-tenant-rol
 import { TenantConfiguration } from './tenant-configuration.entity';
 import { TenantServiceConfig } from './tenant-service-config.entity';
 import { TenantContact } from './tenant-contact.entity';
+import { TenantExternalService } from './external-service.entity';
 
 @Entity('tenants')
 export class Tenant {
@@ -62,4 +63,7 @@ export class Tenant {
 
   @OneToMany(() => TenantContact, contact => contact.tenant, { cascade: true })
   contacts: TenantContact[];
+
+  @OneToMany(() => TenantExternalService, externalService => externalService.tenant, { cascade: true })
+  externalServices: TenantExternalService[];
 }

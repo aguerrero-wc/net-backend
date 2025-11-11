@@ -14,6 +14,7 @@ import {
 import { Type } from 'class-transformer';
 import { CreateTenantConfigurationDto } from './create-tenant-configuration.dto';
 import { CreateTenantContactDto } from './create-tenant-contact.dto';
+import { CreateExternalServiceDto } from './external-service.dto';
 
 export class CreateTenantDto {
   @IsString()
@@ -73,4 +74,10 @@ export class CreateTenantDto {
   @ValidateNested({ each: true })
   @Type(() => CreateTenantContactDto)
   contacts?: CreateTenantContactDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateExternalServiceDto)
+  externalServices?: CreateExternalServiceDto[];
 }
