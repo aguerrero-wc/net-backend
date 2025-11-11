@@ -50,17 +50,6 @@ export class CreateTenantDto {
   favicon?: string;
 
   @IsOptional()
-  @IsEmail()
-  contactEmail?: string;
-
-  @IsOptional()
-  @IsString()
-  @Matches(/^[\d\s\-\+\(\)]+$/, {
-    message: 'Formato de teléfono inválido'
-  })
-  contactPhone?: string;
-
-  @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 

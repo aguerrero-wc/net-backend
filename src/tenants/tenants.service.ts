@@ -76,8 +76,6 @@ async create(createTenantDto: CreateTenantDto): Promise<Tenant> {
       description: createTenantDto.description,
       logo: createTenantDto.logo,
       favicon: createTenantDto.favicon,
-      contactEmail: createTenantDto.contactEmail,
-      contactPhone: createTenantDto.contactPhone,
       isActive: createTenantDto.isActive ?? true,
     });
 
@@ -281,8 +279,6 @@ async create(createTenantDto: CreateTenantDto): Promise<Tenant> {
       description: updateTenantDto.description ?? tenant.description,
       logo: updateTenantDto.logo ?? tenant.logo,
       favicon: updateTenantDto.favicon ?? tenant.favicon,
-      contactEmail: updateTenantDto.contactEmail ?? tenant.contactEmail,
-      contactPhone: updateTenantDto.contactPhone ?? tenant.contactPhone,
       isActive: updateTenantDto.isActive ?? tenant.isActive,
     });
 

@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import { UserTenantRole } from '../../user-tenant-roles/entities/user-tenant-role.entity';
 import { TenantConfiguration } from './tenant-configuration.entity';
-import { TenantServiceConfig } from './tenant-service-config.entity';
 import { TenantContact } from './tenant-contact.entity';
 import { TenantExternalService } from './external-service.entity';
 
@@ -36,12 +35,6 @@ export class Tenant {
   @Column({ nullable: true })
   favicon: string;
 
-  @Column({ nullable: true })
-  contactEmail: string;
-
-  @Column({ nullable: true })
-  contactPhone: string;
-
   @Column({ default: true })
   isActive: boolean;
 
@@ -57,9 +50,6 @@ export class Tenant {
 
   @OneToOne(() => TenantConfiguration, config => config.tenant, { cascade: true })
   configuration: TenantConfiguration;
-
-  @OneToMany(() => TenantServiceConfig, serviceConfig => serviceConfig.tenant, { cascade: true })
-  serviceConfigs: TenantServiceConfig[];
 
   @OneToMany(() => TenantContact, contact => contact.tenant, { cascade: true })
   contacts: TenantContact[];
