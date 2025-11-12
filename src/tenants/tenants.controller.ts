@@ -135,8 +135,9 @@ private sanitizeTenantResponse(tenant: any) {
    * Obtener un tenant por ID
    */
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.tenantsService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    const tenant = await this.tenantsService.findOne(id);
+    return this.sanitizeTenantResponse(tenant);
   }
 
   /**
