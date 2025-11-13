@@ -10,16 +10,16 @@ export class Role {
   name: string;
 
   @Column({ unique: true })
-  slug: string; // 'super-admin', 'tenant-admin', 'editor', 'viewer'
+  slug: string;
 
   @Column({ nullable: true })
   description: string;
 
   @Column({ nullable: true })
-  color: string; // Color para badges/chips
+  color: string;
 
   @Column({ nullable: true })
-  icon: string; // Icono para UI
+  icon: string;
 
   // Nivel de acceso (para jerarquía)
   @Column({ default: 0 })
@@ -38,10 +38,7 @@ export class Role {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToMany(() => Permission, {
-    cascade: true,
-    eager: true,
-  })
+  @ManyToMany(() => Permission, { cascade: true, eager: true })
   @JoinTable({
     name: 'role_permissions',
     joinColumn: {

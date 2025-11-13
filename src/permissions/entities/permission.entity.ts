@@ -38,7 +38,6 @@ export class Permission {
   @UpdateDateColumn()
   updatedAt: Date;
 
-
-    @ManyToMany(() => Role, (role) => role.permissions)
-    roles: Role[];
+  @ManyToMany(() => Role, (role) => role.permissions)
+  roles: Role[];
 }
