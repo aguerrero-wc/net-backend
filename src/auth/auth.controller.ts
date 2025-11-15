@@ -18,6 +18,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RefreshJwtAuthGuard } from './guards/refresh-jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
+import { AuthenticatedUserWithRefreshToken } from './interfaces/authenticated-user.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -56,7 +57,7 @@ export class AuthController {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     
     const result = await this.authService.signIn(
-      { identifier: user.email || user.nickname, password: signInDto.password },
+      { tenantId: signInDto.tenantId, identifier: user.email || user.nickname, password: signInDto.password },
       ip,
     );
 
@@ -86,11 +87,11 @@ export class AuthController {
   @UseGuards(RefreshJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async refresh(
-    @CurrentUser() user: User & { refreshToken: string },
+    @CurrentUser() user: AuthenticatedUserWithRefreshToken,
     @Res({ passthrough: true }) res: Response,
   ) {
     // RefreshJwtStrategy ya validó el refresh token y adjuntó user + refreshToken a req.user
-    const tokens = await this.authService.refreshTokens(user.id, user.refreshToken);
+    const tokens = await this.authService.refreshTokens(user.tenantId, user.userId, user.refreshToken);
 
     // Actualizar cookie con el nuevo refresh token
     res.cookie('refreshToken', tokens.refreshToken, {

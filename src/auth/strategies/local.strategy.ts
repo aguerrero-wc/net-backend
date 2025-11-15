@@ -10,6 +10,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     super({
       usernameField: 'identifier', // Por defecto Passport busca 'username', cambiamos a 'email'
       passwordField: 'password',
+      passReqToCallback: true, // Accede al body completo
     });
   }
 
@@ -17,14 +18,20 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
    * Passport ejecuta automáticamente este método cuando se usa LocalAuthGuard
    * Recibe email y password del request body
    */
-  async validate(identifier: string, password: string): Promise<User> {
-    const user = await this.authService.validateUser(identifier, password);
+  async validate(req:any, identifier: string, password: string): Promise<User> {
+    const tenantId = req.body.tenantId;
+    if (!tenantId) {
+      throw new UnauthorizedException('Tenant ID no proporcionado');
+    }
+
+
+    const userPayload = await this.authService.validateUser(identifier, password, tenantId);
     
-    if (!user) {
+    if (!userPayload) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
     
     // Si es válido, Passport adjunta el usuario a request.user
-    return user;
+    return userPayload;
   }
 }

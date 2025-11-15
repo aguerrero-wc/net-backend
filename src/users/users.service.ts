@@ -351,7 +351,9 @@ export class UsersService {
   ): Promise<User | null> {
     // Obtener el usuario con el hashedRefreshToken
     const user = await this.userRepository.findOne({
-      where: { id: userId },
+      where: { 
+        id: userId,
+      },
       select: [
         'id',
         'firstName',
@@ -377,6 +379,11 @@ export class UsersService {
     if (!user || !user.hashedRefreshToken) {
       return null;
     }
+
+    // Verificar que el usuario esté activo
+    // if (!user.isActive || user.isBlocked) {
+    //   return null;
+    // }
 
     // Comparar el refresh token recibido con el hash almacenado
     const isRefreshTokenMatching = await bcrypt.compare(

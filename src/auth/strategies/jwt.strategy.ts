@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService, JwtPayload } from '../auth.service';
 import { User } from '../../users/entities/user.entity';
+import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -14,17 +15,23 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_ACCESS_SECRET') as string, // ✅ Sin <string>
+      secretOrKey: configService.get('JWT_ACCESS_SECRET') as string,
     });
   }
 
-  async validate(payload: JwtPayload): Promise<Partial<User>> {
+  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     const user = await this.authService.validateAccessToken(payload);
     
     if (!user) {
       throw new UnauthorizedException('Token inválido');
     }
     
-    return user;
+    return {
+      userId: payload.sub,
+      email: payload.email,
+      tenantId: payload.tenantId,
+      roleId: payload.roleId,
+      roleSlug: payload.roleSlug,
+    };
   }
 }
