@@ -9,8 +9,8 @@ export class RolesGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     // 1. Obtener los roles requeridos del decorador @Roles()
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
-      context.getHandler(), // Nivel método
-      context.getClass(),   // Nivel controlador
+      context.getHandler(),
+      context.getClass(),
     ]);
 
     // 2. Si no hay roles definidos, permitir acceso
@@ -21,15 +21,12 @@ export class RolesGuard implements CanActivate {
     // 3. Obtener el usuario del request (viene de JwtStrategy)
     const { user } = context.switchToHttp().getRequest();
 
-    if (!user || !user.role) {
+    if (!user || !user.roleSlug) { // 🔥 Cambiar: verificar roleSlug
       throw new ForbiddenException('No tienes permisos para acceder a este recurso');
     }
 
-    // 4. Verificar si el usuario tiene alguno de los roles requeridos
-    const hasRole = requiredRoles.some((roleName) => {
-      // Buscar por name o por slug
-      return user.role.name === roleName || user.role.slug === roleName;
-    });
+    // 4. Verificar si el roleSlug del usuario está en los roles requeridos
+    const hasRole = requiredRoles.includes(user.roleSlug); // 🔥 Simplificado
 
     if (!hasRole) {
       throw new ForbiddenException(

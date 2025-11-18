@@ -19,8 +19,15 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryRoleDto } from './dto/query-role.dto';
 import { ManagePermissionsDto } from './dto/manage-permissions.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('roles')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
@@ -30,7 +37,9 @@ export class RolesController {
   }
 
   @Get()
-  async findAll(@Query() queryDto: QueryRoleDto) {
+  @Roles('super-admin')
+  async findAll(@CurrentUser() user: AuthenticatedUser, @Query() queryDto: QueryRoleDto) {
+    console.log('userrrrrrrrr999', user);
     return this.rolesService.findAll(queryDto);
   }
 

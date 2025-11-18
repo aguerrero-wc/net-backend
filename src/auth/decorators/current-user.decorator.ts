@@ -7,6 +7,6 @@ export const CurrentUser = createParamDecorator(
     const user = request.user;
 
     // Si se especifica un campo específico, retornar solo ese campo
-    return data ? user?.[data] : user;
+    return user;
   },
 );

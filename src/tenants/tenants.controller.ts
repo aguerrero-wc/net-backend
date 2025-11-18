@@ -15,61 +15,62 @@ import {
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Controller('tenants')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
-private sanitizeTenantResponse(tenant: any) {
-  const { externalServices, ...tenantData } = tenant;
+  private sanitizeTenantResponse(tenant: any) {
+    const { externalServices, ...tenantData } = tenant;
 
-  if (!externalServices || externalServices.length === 0) {
-    return {
-      ...tenantData,
-      externalServices: [],
-    };
-  }
-
-  // Campos que SÍ se pueden mostrar (no sensibles)
-  const nonSensitiveFields = [
-    'bucket',
-    'region',
-    'fromEmail',
-    'fromName',
-    'endpoint',
-    'appId',      // App ID no es secreto
-    'clientId',   // Client ID no es secreto
-    'publicKey',  // Public key no es secreto (Stripe)
-  ];
-
-  const sanitizedServices = externalServices.map(service => {
-    const { credentials, ...serviceData } = service;
-    
-    const maskedCredentials = {};
-    if (credentials) {
-      for (const [key, value] of Object.entries(credentials)) {
-        // Si el campo NO es sensible, mostrarlo completo
-        if (nonSensitiveFields.includes(key)) {
-          maskedCredentials[key] = value;
-        } else {
-          // Si es sensible, enmascarar
-          maskedCredentials[key] = '••••••••';
-        }
-      }
+    if (!externalServices || externalServices.length === 0) {
+      return {
+        ...tenantData,
+        externalServices: [],
+      };
     }
 
-    return {
-      ...serviceData,
-      credentials: maskedCredentials,
-      hasCredentials: credentials && Object.keys(credentials).length > 0,
-    };
-  });
+    // Campos que SÍ se pueden mostrar (no sensibles)
+    const nonSensitiveFields = [
+      'bucket',
+      'region',
+      'fromEmail',
+      'fromName',
+      'endpoint',
+      'appId',      // App ID no es secreto
+      'clientId',   // Client ID no es secreto
+      'publicKey',  // Public key no es secreto (Stripe)
+    ];
 
-  return {
-    ...tenantData,
-    externalServices: sanitizedServices,
-  };
-}
+    const sanitizedServices = externalServices.map(service => {
+      const { credentials, ...serviceData } = service;
+      
+      const maskedCredentials = {};
+      if (credentials) {
+        for (const [key, value] of Object.entries(credentials)) {
+          // Si el campo NO es sensible, mostrarlo completo
+          if (nonSensitiveFields.includes(key)) {
+            maskedCredentials[key] = value;
+          } else {
+            // Si es sensible, enmascarar
+            maskedCredentials[key] = '••••••••';
+          }
+        }
+      }
+
+      return {
+        ...serviceData,
+        credentials: maskedCredentials,
+        hasCredentials: credentials && Object.keys(credentials).length > 0,
+      };
+    });
+
+    return {
+      ...tenantData,
+      externalServices: sanitizedServices,
+    };
+  }
 
   /**
    * POST /tenants
@@ -80,7 +81,6 @@ private sanitizeTenantResponse(tenant: any) {
   async create(@Body() createTenantDto: CreateTenantDto) {
     const tenant = await this.tenantsService.create(createTenantDto);
     console.log(tenant);
-    
     return this.sanitizeTenantResponse(tenant);
   }
 
@@ -89,6 +89,7 @@ private sanitizeTenantResponse(tenant: any) {
    * Obtener todos los tenants con paginación y filtros
    */
   @Get()
+  @Roles('editor')
   findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
