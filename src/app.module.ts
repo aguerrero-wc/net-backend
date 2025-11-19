@@ -9,6 +9,7 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { AuthModule } from './auth/auth.module';
 import { getDatabaseConfig } from './config/database.config';
 import { CommonModule } from './common/common.module';
+import { StorageModule } from './storage/storage.module';
 
 
 @Module({
@@ -29,6 +30,7 @@ import { CommonModule } from './common/common.module';
     PermissionsModule,
     AuthModule,
     CommonModule,
+    StorageModule,
   ],
 })
 export class AppModule {}

@@ -26,6 +26,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.935.0",
+    "@aws-sdk/lib-storage": "^3.935.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -40,6 +42,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
+    "multer": "^2.0.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
@@ -57,8 +60,9 @@
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.7",
     "@types/cookie-parser": "^1.4.9",
-    "@types/express": "^5.0.0",
+    "@types/express": "^5.0.5",
     "@types/jest": "^29.5.14",
+    "@types/multer": "^2.0.0",
     "@types/node": "^22.15.29",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
