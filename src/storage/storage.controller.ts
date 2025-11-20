@@ -34,7 +34,7 @@ export class StorageController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File ) {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
@@ -66,12 +66,5 @@ export class StorageController {
     };
   }
 
-  @Delete(':key(*)')
-  async deleteFile(@Param('key') key: string) {
-    await this.storageService.deleteFile(key);
 
-    return {
-      message: 'File deleted successfully',
-    };
-  }
 }

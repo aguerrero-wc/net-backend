@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
-  PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -11,7 +10,8 @@ import {
 import { Upload } from '@aws-sdk/lib-storage';
 import { getStorageConfig } from '../config/storage.config';
 import { Readable } from 'stream';
-import { Multer } from 'multer';
+
+// No necesitas importar Multer aquí, los tipos son globales con @types/multer
 
 export interface UploadResult {
   url: string;
@@ -50,7 +50,7 @@ export class StorageService {
         accessKeyId: this.config.accessKeyId,
         secretAccessKey: this.config.secretAccessKey,
       },
-      forcePathStyle: false, // DigitalOcean usa virtual-hosted-style
+      forcePathStyle: true, // DigitalOcean usa virtual-hosted-style
     });
 
     this.logger.log(
@@ -62,7 +62,6 @@ export class StorageService {
     const startTime = Date.now();
     
     try {
-      // Intenta hacer un HeadBucket (operación ligera)
       const command = new HeadBucketCommand({
         Bucket: this.config.bucket,
       });
@@ -125,7 +124,6 @@ export class StorageService {
           Body: file.buffer,
           ContentType: file.mimetype,
           ACL: isPublic ? 'public-read' : 'private',
-          // Metadata personalizada
           Metadata: {
             originalName: file.originalname,
             uploadedAt: new Date().toISOString(),
@@ -212,7 +210,7 @@ export class StorageService {
       await this.s3Client.send(command);
       return true;
     } catch (error) {
-      if (error.name === 'NotFound') {
+      if (error.name === 'NotFound' || (error as any).$metadata?.httpStatusCode === 404) {
         return false;
       }
       throw error;
